@@ -1,0 +1,10 @@
+
+/*  custom init phone no css   */
+.iti {
+  width: 100%;
+}
+
+.iti--allow-dropdown input,
+.iti--separate-dial-code input {
+  padding-left: 90px !important; /* space for country flag */
+}
