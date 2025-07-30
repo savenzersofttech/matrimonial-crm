@@ -36,7 +36,7 @@
             </div>
 
             <div class="card-body">
-                <table id="datatableTable">
+                <table id="simpleDatatable">
                     <thead>
                         <tr>
                             <th>#</th>
@@ -147,7 +147,7 @@
                             <div class="col-6 mb-3">
                                 <label for="phone" class="form-label">Contact Number</label>
                                 <input type="hidden" id="phone_code" name="phone_code">
-                                <input type="tel" class="form-control" id="phone" name="phone" placeholder="+1234567890">
+                                <input type="tel" class="form-control" id="phone" name="phone_number" placeholder="+1234567890">
                             </div>
 
 

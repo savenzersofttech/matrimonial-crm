@@ -14,6 +14,7 @@ class Lead extends Model
         'status',
         'follow_up',
         'note',   
+        'created_by',
     ];
 
     // Link to profile (if using a profiles table)

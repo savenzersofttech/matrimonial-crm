@@ -405,3 +405,19 @@ if (!function_exists('casteOption')) {
         ];
     }
 }
+
+
+if (!function_exists('leadsOption')) {
+    function leadsOption()
+    {
+        return [
+                'New',
+                'Contacted',
+                'Follow Up',
+                'Qualified',
+                'Not Interested',
+                'Lost',
+                'Converted',
+        ];
+    }
+}

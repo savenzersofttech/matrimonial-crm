@@ -24,10 +24,51 @@
     <link href="https://cdn.datatables.net/2.3.2/css/dataTables.bootstrap5.css" rel="stylesheet">"
 
     <link href="https://cdn.jsdelivr.net/npm/litepicker@2.0.12/dist/css/litepicker.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/intl-tel-input@23.5.0/build/css/intlTelInput.css">
+    <style>
+        .was-validated .form-control:valid {
+            border-color: #ced4da;
+            background-image: none;
+        }
 
+        .was-validated .form-control:valid:focus {
+            border-color: #86b7fe;
+            box-shadow: none;
+        }
+
+        .was-validated .valid-feedback {
+            display: none !important;
+        }
+
+        .iti {
+            width: 100%;
+        }
+
+        .iti__country-list {
+            width: 100% !important;
+            /* Match dropdown width to input */
+            max-width: 100% !important;
+            /* Ensure it doesn't exceed input width */
+            min-width: auto !important;
+            /* Allow natural width adjustment */
+            box-sizing: border-box;
+            /* Include padding and border in width calculation */
+        }
+
+        .iti__country-list .iti__country {
+            padding: 5px 10px;
+            /* Adjust padding for better appearance */
+        }
+
+    </style>
 
 
     <style>
+        .required::after {
+        content: " *";
+        color: red;
+    }
+
         .vscomp-option.disabled {
             display: none !important;
         }
@@ -180,13 +221,14 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.datatables.net/2.3.2/js/dataTables.js"></script>
     <script src="https://cdn.datatables.net/2.3.2/js/dataTables.bootstrap5.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/intl-tel-input@23.5.0/build/js/intlTelInput.min.js"></script>
 
     <script src="{{ asset('assets/sb2/js/formjs.js') }}"></script>
     <script src="{{ asset('assets/sb2/js/scripts.js') }}"></script>
     <script src="{{ asset('assets/sb2/js/functions.js') }}"></script>
     <script>
         feather.replace();
-        
+
     </script>
 
     <!-- Toast container -->
@@ -250,7 +292,7 @@
 
             @if($errors->any())
             let errorMessages = {
-                !!json_encode($errors - > all()) !!
+                !!json_encode($errors->all()) !!
             };
             let errorText = errorMessages.join("\n");
             showDangerToast("Validation Error", errorText);

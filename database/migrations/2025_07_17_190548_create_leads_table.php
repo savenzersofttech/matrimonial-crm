@@ -31,6 +31,7 @@ class CreateLeadsTable extends Migration
                 ->references('id')
                 ->on('profiles');
                 // No cascade on delete to preserve profile
+             $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
         });
     }
 

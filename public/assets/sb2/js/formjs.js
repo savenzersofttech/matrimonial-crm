@@ -1,130 +1,158 @@
-let form = document.getElementById('regForm'),
-    csrfToken = (document.querySelector('[name="csrf-token"]') && document.querySelector('[name="csrf-token"]').content || ''),
+let form = document.getElementById("regForm"),
+    csrfToken =
+        (document.querySelector('[name="csrf-token"]') &&
+            document.querySelector('[name="csrf-token"]').content) ||
+        "",
     pwdd;
-(form && (form.addEventListener("submit", async function (e) {
-    e.preventDefault();
-    if (!$('#regForm').valid()) return false;
+form &&
+    form.addEventListener("submit", async function (e) {
+        e.preventDefault();
+        if (!$("#regForm").valid()) return false;
 
-    const $callback = $('#regForm[callbackFn]');
-    const $callbackAfterSuccess = $('#regForm[callbackSuccessFn]');
-    if ($callback && $callback.attr('callbackFn')) {
-        const Fn = $callback.attr('callbackFn');
-        const callbackRes = await window[Fn]();
-        if (!callbackRes) {
-            typeof (callbackErrorMessage) !== 'undefined' && toastr.error(callbackErrorMessage);
-            return false;
+        const $callback = $("#regForm[callbackFn]");
+        const $callbackAfterSuccess = $("#regForm[callbackSuccessFn]");
+        if ($callback && $callback.attr("callbackFn")) {
+            const Fn = $callback.attr("callbackFn");
+            const callbackRes = await window[Fn]();
+            if (!callbackRes) {
+                typeof callbackErrorMessage !== "undefined" &&
+                    toastr.error(callbackErrorMessage);
+                return false;
+            }
         }
-    }
 
+        const button = this.querySelector("[type=submit]");
+        const forms = this;
+        const buttonText = button.innerHTML;
+        startLoadings(button);
+        await delay(1000);
+        const formData = new FormData(form);
+        form && $("select,input,textarea", form).attr("disabled", true);
+        var url = this.action;
 
+        try {
+            const res = await makeHttpRequest(
+                url,
+                form?.nethod || "post",
+                formData
+            );
+            if (res.success) {
+                stopLoadings(button, buttonText);
 
-    const button = this.querySelector('[type=submit]');
-    const forms = this;
-    const buttonText = button.innerHTML;
-    startLoadings(button);
-    await delay(1000);
-    const formData = new FormData(  );
-    form && $('select,input,textarea', form).attr('disabled', true);
-    var url = this.action;
-
-    try {
-        const res = await makeHttpRequest(url, (form?.nethod || 'post'), formData);
-        if (res.success) {
-            stopLoadings(button, buttonText)
-
-             if (res?.tableReload) {
+                if (res?.tableReload) {
                     table?.ajax && table.ajax.reload();
                 }
-                    
-            if (res.sweetAlert) {
-                try {
-                    Swal.fire({
-                        title: "Successful",
-                        text: res.success,
-                        icon: "success",
-                        allowOutsideClick: false
-                    }).then(async (result) => {
-                        if (result.isConfirmed) {
-                            res.redirectConfirmation && await confirmation(res);
-                            window.scrollTo({
-                                top: 10,
-                            });
-                            if (res?.redirect) {
-                                toastr.success('Redirecting...');
-                                setTimeout(() => { window.location = res.redirect }, 1500);
+
+                if (res.sweetAlert) {
+                    try {
+                        Swal.fire({
+                            title: "Successful",
+                            text: res.success,
+                            icon: "success",
+                            allowOutsideClick: false,
+                        }).then(async (result) => {
+                            if (result.isConfirmed) {
+                                res.redirectConfirmation &&
+                                    (await confirmation(res));
+                                window.scrollTo({
+                                    top: 10,
+                                });
+                                if (res?.redirect) {
+                                    toastr.success("Redirecting...");
+                                    setTimeout(() => {
+                                        window.location = res.redirect;
+                                    }, 1500);
+                                }
                             }
+                        });
+
+                        try {
+                            if (typeof closeBtn !== undefined) closeBtn.click();
+                        } catch (error) {}
+                    } catch (error) {
+                        alert(error);
+                    }
+                } else {
+                    toastr.success(res.success);
+                }
+
+                if (res.reloadReq) {
+                    window.scrollTo({
+                        top: 0,
+                        behavior: "smooth",
+                    });
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
+                }
+                forms.reset();
+
+                if (
+                    $callbackAfterSuccess &&
+                    $callbackAfterSuccess.attr("callbackSuccessFn")
+                ) {
+                    const Fn = $callbackAfterSuccess.attr("callbackSuccessFn");
+                    const callbackResSuccess = await window[Fn]();
+                    if (!callbackResSuccess) {
+                        typeof callbackResSuccess !== "undefined" &&
+                            toastr.error(callbackResSuccess);
+                        return false;
+                    }
+                }
+            } else if (res.message) {
+                toastr.error(res.message);
+            }
+
+            if (res.error) {
+                toastr.error(res.error);
+            }
+
+            // if (res.validationError) {
+            //     Object.keys(res.validationError).forEach((message) => {
+            //         toastr.error(res.validationError[message]);
+            //     });
+            // }
+
+            if (res.validationError) {
+                const error = res.validationError;
+
+                if (typeof error === 'string') {
+                    // Single error message as string (e.g., SQL error)
+                    toastr.error(error);
+                } else if (typeof error === 'object') {
+                    // Laravel-style validation errors (object with arrays or strings)
+                    Object.keys(error).forEach((key) => {
+                        if (Array.isArray(error[key])) {
+                            error[key].forEach((msg) => toastr.error(msg));
+                        } else if (typeof error[key] === 'string') {
+                            toastr.error(error[key]);
                         }
                     });
-
-                   
-                    try {
-                        if (typeof closeBtn !== undefined) closeBtn.click();
-                    } catch (error) {
-
-                    }
-
-
-                } catch (error) {
-                    alert(error)
                 }
-            } else {
-                toastr.success(res.success);
             }
 
-            if (res.reloadReq) {
-                window.scrollTo({
-                    top: 0,
-                    behavior: 'smooth'
+
+
+            if (res.validationErrorToastr) {
+                Object.keys(res.validationErrorToastr).forEach((message) => {
+                    toastr.error(res.validationErrorToastr[message]);
                 });
+            }
+
+            if (!res.success && res.redirect) {
+                toastr.success("Redirecting...");
                 setTimeout(() => {
-                    window.location.reload();
-                }, 1000)
-            }
-            forms.reset();
-
-            if ($callbackAfterSuccess && $callbackAfterSuccess.attr('callbackSuccessFn')) {
-                const Fn = $callbackAfterSuccess.attr('callbackSuccessFn');
-                const callbackResSuccess = await window[Fn]();
-                if (!callbackResSuccess) {
-                    typeof (callbackResSuccess) !== 'undefined' && toastr.error(callbackResSuccess);
-                    return false;
-                }
+                    window.location = res.redirect;
+                }, 1500);
             }
 
-        } else if (res.message) {
-            toastr.error(res.message);
+            if (res.csrfToken) $("input[type=hidden]").val(res.csrfToken);
+        } catch (error) {
+            toastr.error(error);
         }
-
-        if (res.error) {
-            toastr.error(res.error);
-        }
-
-        if (res.validationError) {
-            Object.keys(res.validationError).forEach(message => {
-                toastr.error(res.validationError[message]);
-            })
-
-        }
-
-        if (res.validationErrorToastr) {
-            Object.keys(res.validationErrorToastr).forEach(message => {
-                toastr.error(res.validationErrorToastr[message]);
-            });
-        }
-
-        if (!res.success && res.redirect) {
-            toastr.success('Redirecting...');
-            setTimeout(() => { window.location = res.redirect }, 1500);
-        }
-
-        if (res.csrfToken) $('input[type=hidden]').val(res.csrfToken);
-    } catch (error) {
-        toastr.error(error);
-    }
-    form && $('select,input,textarea', form).removeAttr('disabled');
-    stopLoadings(button, buttonText);
-})));
-
+        form && $("select,input,textarea", form).removeAttr("disabled");
+        stopLoadings(button, buttonText);
+    });
 
 /*async function makeHttpRequest(url,method,data){
   const res = await fetch(url, {
@@ -153,14 +181,24 @@ let form = document.getElementById('regForm'),
 } */
 
 async function makeHttpRequest(url, method, data, csrf = false) {
-    let res,
-        resText,
-        config;
+    let res, resText, config;
 
-    config = csrf ? { method: method, body: data, headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' } } : { method: method, body: data, headers: { 'Accept': 'application/json' } };
+    config = csrf
+        ? {
+              method: method,
+              body: data,
+              headers: {
+                  "X-CSRF-TOKEN": csrfToken,
+                  Accept: "application/json",
+              },
+          }
+        : {
+              method: method,
+              body: data,
+              headers: { Accept: "application/json" },
+          };
     try {
-
-        if (method.toLowerCase() == 'post') {
+        if (method.toLowerCase() == "post") {
             res = await fetch(url, config);
         } else {
             res = await fetch(url);
@@ -172,11 +210,10 @@ async function makeHttpRequest(url, method, data, csrf = false) {
 
         return await res.json();
     } catch (error) {
-
         try {
             resText = await res.text(); // Read the text from the cloned response
         } catch (textError) {
-            console.log(textError)
+            console.log(textError);
             throw new Error("Error getting response text:", textError);
         }
         console.log(resText.slice(0, 20));
@@ -190,11 +227,11 @@ function removeHtmlTags(text) {
      // Replace HTML tags with an empty string
      return text.replace(htmlRegex, '');*/
     // Remove HTML tags
-    text = text.replace(/<[^>]+>/g, '');
+    text = text.replace(/<[^>]+>/g, "");
 
     // Remove HTML comments
-    text = text.replace(/<!--[\s\S]*?-->/g, '');
-    text = text.replace(/<!--/g, '');
+    text = text.replace(/<!--[\s\S]*?-->/g, "");
+    text = text.replace(/<!--/g, "");
     return text;
 }
 
@@ -204,11 +241,11 @@ function validate2() {
     if (enKey != "") {
         let pwdObj = password;
         let hashObj = new jsSHA("SHA-512", "TEXT", {
-            numRounds: 1
+            numRounds: 1,
         });
         hashObj.update(pwdObj.value);
         let hash = hashObj.getHash("HEX");
-        console.log(hash, 'first hash');
+        console.log(hash, "first hash");
         let hmacObj = new jsSHA("SHA-512", "TEXT");
         hmacObj.setHMACKey(enKey, "TEXT");
         hmacObj.update(hash);
@@ -218,7 +255,6 @@ function validate2() {
         return false;
     }
 }
-
 
 //for input type number icon remove
 
@@ -230,44 +266,51 @@ $(document).ready(function () {
     });
 
     $(document).on("keypress", ".num[type=number]", function (event) {
-        return event.keyCode === 8 || event.charCode >= 48 && event.charCode <= 57;
-    })
+        return (
+            event.keyCode === 8 ||
+            (event.charCode >= 48 && event.charCode <= 57)
+        );
+    });
 
     $(document).on("keypress", ".allowDot[type=number]", function (event) {
-        return event.charCode === 46 || (event.charCode >= 48 && event.charCode <= 57);
-    })
+        return (
+            event.charCode === 46 ||
+            (event.charCode >= 48 && event.charCode <= 57)
+        );
+    });
 
-    $('.alphaSpace').keypress(function () {
-        return (event.keyCode >= 65 && event.keyCode <= 90) || (event.keyCode >= 97 && event.keyCode <= 122) || event.keyCode === 32;
-    })
+    $(".alphaSpace").keypress(function () {
+        return (
+            (event.keyCode >= 65 && event.keyCode <= 90) ||
+            (event.keyCode >= 97 && event.keyCode <= 122) ||
+            event.keyCode === 32
+        );
+    });
 
     $(document).on("input", ".currency-input", function () {
         formatCurrency(this);
-    })
-
+    });
 });
 
-function startLoadings(thi, text = 'Please Wait...') {
-
-    thi.setAttribute('disabled', true);
-    var loader = document.createElement('span');
+function startLoadings(thi, text = "Please Wait...") {
+    thi.setAttribute("disabled", true);
+    var loader = document.createElement("span");
     $(loader).attr({
-        'class': 'spinner-border spinner-border-sm',
-        'role': 'status',
-        'aria-hidden': 'true'
+        class: "spinner-border spinner-border-sm",
+        role: "status",
+        "aria-hidden": "true",
     });
-    thi.innerHTML = $(loader)[0].outerHTML + '  ' + text;
-
+    thi.innerHTML = $(loader)[0].outerHTML + "  " + text;
 }
 
 function stopLoadings(thi, text, disabled = false) {
-    form && $('select,input,textarea').removeAttr('disabled');
+    form && $("select,input,textarea").removeAttr("disabled");
     thi.disabled = disabled;
     thi.innerHTML = text;
 }
 
 function delay(sec) {
-    return new Promise(resolve => setTimeout(resolve, sec));
+    return new Promise((resolve) => setTimeout(resolve, sec));
 }
 
 // HTML entity encoding function
@@ -278,7 +321,10 @@ function htmlEncode(text) {
     var ltRegex = /</g;
 
     // Perform HTML entity encoding
-    return String(text).replace(ampRegex, '&amp;').replace(gtRegex, '&gt;').replace(ltRegex, '&lt;');
+    return String(text)
+        .replace(ampRegex, "&amp;")
+        .replace(gtRegex, "&gt;")
+        .replace(ltRegex, "&lt;");
 }
 
 function htmlRemove(text) {
@@ -288,7 +334,10 @@ function htmlRemove(text) {
     var ltRegex = /&lt;/g;
 
     // Perform HTML entity decoding
-    return String(text).replace(ampRegex, '').replace(gtRegex, '').replace(ltRegex, '');
+    return String(text)
+        .replace(ampRegex, "")
+        .replace(gtRegex, "")
+        .replace(ltRegex, "");
 }
 
 function htmlDecode(text) {
@@ -298,7 +347,11 @@ function htmlDecode(text) {
     var ltRegex = /&lt;/g;
     var quot = /&quot;/g;
     // Perform HTML entity decoding
-    return String(text).replace(ampRegex, '&').replace(gtRegex, '>').replace(ltRegex, '<').replace(quot, '"');
+    return String(text)
+        .replace(ampRegex, "&")
+        .replace(gtRegex, ">")
+        .replace(ltRegex, "<")
+        .replace(quot, '"');
 }
 
 function removeHtmlTags(text) {
@@ -306,7 +359,7 @@ function removeHtmlTags(text) {
     var htmlRegex = /<[^>]*>/g;
 
     // Remove HTML tags from the string
-    return text.replace(htmlRegex, '');
+    return text.replace(htmlRegex, "");
 }
 
 function convertDateInDays(date) {
@@ -322,7 +375,9 @@ function convertDateInDays(date) {
     var differenceInMilliseconds = currentDate - givenDate;
 
     // Convert the difference to days
-    var differenceInDays = Math.floor(differenceInMilliseconds / (1000 * 60 * 60 * 24));
+    var differenceInDays = Math.floor(
+        differenceInMilliseconds / (1000 * 60 * 60 * 24)
+    );
 
     return differenceInDays;
 }
@@ -340,12 +395,12 @@ async function confirmation(res) {
         confirmButtonColor: "#3085d6",
         cancelButtonColor: "#d33",
         confirmButtonText: "Yes, Proceed!",
-        allowOutsideClick: false
+        allowOutsideClick: false,
     });
 
     if (result.isConfirmed) {
         if (res?.redirectYesUrl) {
-            toastr.success('Redirecting...');
+            toastr.success("Redirecting...");
             setTimeout(() => {
                 window.location = res.redirectYesUrl;
             }, 1000);
@@ -359,10 +414,9 @@ async function confirmation(res) {
     }
 }
 
-
 function convertStringToOriginalType(input) {
     // Check if input is a string
-    if (typeof input === 'string' || input instanceof String) {
+    if (typeof input === "string" || input instanceof String) {
         try {
             // Attempt to parse the string
             const parsed = JSON.parse(input);
@@ -378,8 +432,8 @@ function convertStringToOriginalType(input) {
     return input;
 }
 
-function mb_strimwidth(str, start, width, trimmarker = '...') {
-    let result = '';
+function mb_strimwidth(str, start, width, trimmarker = "...") {
+    let result = "";
     let len = 0;
 
     for (let i = start; i < str.length; i++) {
@@ -408,31 +462,33 @@ function mb_strimwidth(str, start, width, trimmarker = '...') {
 function formatCurrency(ele) {
     //alert(232)
 
-    let value = ele.value.replaceAll(',', '').replaceAll('₹ ', '');
-    let newValue = '₹ ' + (+value).toLocaleString('en-IN');
+    let value = ele.value.replaceAll(",", "").replaceAll("₹ ", "");
+    let newValue = "₹ " + (+value).toLocaleString("en-IN");
     console.log(newValue);
     ele.value = newValue;
 }
 
 function formatINR(value) {
-    let cleanValue = value.toString().replace(/[^0-9.]/g, ''); // remove commas, ₹, etc.
+    let cleanValue = value.toString().replace(/[^0-9.]/g, ""); // remove commas, ₹, etc.
     let number = parseFloat(cleanValue);
 
-    if (isNaN(number)) return '';
+    if (isNaN(number)) return "";
 
-    return '₹ ' + number.toLocaleString('en-IN', {
-        maximumFractionDigits: 2,
-        minimumFractionDigits: 0
-    });
+    return (
+        "₹ " +
+        number.toLocaleString("en-IN", {
+            maximumFractionDigits: 2,
+            minimumFractionDigits: 0,
+        })
+    );
 }
-
 
 async function deleteConfirmation(ele, event) {
     event.preventDefault();
 
-    const id = ele.getAttribute('data-id');
-    const baseHref = ele.getAttribute('data-href');
-    const href = baseHref.replace(':id', id); // Inject ID into URL
+    const id = ele.getAttribute("data-id");
+    const baseHref = ele.getAttribute("data-href");
+    const href = baseHref.replace(":id", id); // Inject ID into URL
 
     Swal.fire({
         title: "Are you sure?",
@@ -442,13 +498,13 @@ async function deleteConfirmation(ele, event) {
         confirmButtonColor: "#3085d6",
         cancelButtonColor: "#d33",
         confirmButtonText: "Yes, delete it!",
-        allowOutsideClick: false
+        allowOutsideClick: false,
     }).then(async (result) => {
         if (result.isConfirmed) {
             try {
                 const formData = new FormData();
-                formData.append('_method', 'DELETE'); // Laravel expects DELETE via POST + _method
-                formData.append('_token', csrfToken); // Add CSRF token
+                formData.append("_method", "DELETE"); // Laravel expects DELETE via POST + _method
+                formData.append("_token", csrfToken); // Add CSRF token
 
                 const res = await makeHttpRequest(href, "POST", formData);
 
@@ -458,7 +514,11 @@ async function deleteConfirmation(ele, event) {
                         table?.ajax?.reload();
                     }
                 } else {
-                    Swal.fire("Error!", res.error || "Something went wrong", "error");
+                    Swal.fire(
+                        "Error!",
+                        res.error || "Something went wrong",
+                        "error"
+                    );
                 }
             } catch (error) {
                 toastr.error(error.message || "Unexpected error");
@@ -466,8 +526,6 @@ async function deleteConfirmation(ele, event) {
         }
     });
 }
-
-
 
 async function confirmationAndPost(event, data) {
     event.preventDefault();
@@ -479,72 +537,82 @@ async function confirmationAndPost(event, data) {
         confirmButtonColor: "#3085d6",
         cancelButtonColor: "#d33",
         confirmButtonText: "Yes, Proceed!",
-        allowOutsideClick: false
+        allowOutsideClick: false,
     }).then(async (result) => {
         if (result.isConfirmed) {
             toggleLoader();
             try {
-                const res = await makeHttpRequest(data.href, data?.method ?? 'POST', data?.postData ?? []);
+                const res = await makeHttpRequest(
+                    data.href,
+                    data?.method ?? "POST",
+                    data?.postData ?? []
+                );
                 toggleLoader();
                 if (res.status) {
-                    res?.data?.sweetAlert && Swal.fire({
-                        title: "Deleted!",
-                        text: res.message,
-                        icon: "success"
-                    });
+                    res?.data?.sweetAlert &&
+                        Swal.fire({
+                            title: "Deleted!",
+                            text: res.message,
+                            icon: "success",
+                        });
 
                     !res?.data?.sweetAlert && toastr.success(res.message);
 
-                    res?.data?.redirectUrl && toastr.success('Redirecting...') && setTimeout(() => { window.location = res?.data?.redirectUrl }, 1500)
+                    res?.data?.redirectUrl &&
+                        toastr.success("Redirecting...") &&
+                        setTimeout(() => {
+                            window.location = res?.data?.redirectUrl;
+                        }, 1500);
 
-                    res?.data?.reload && (window.loaction.reload());
+                    res?.data?.reload && window.loaction.reload();
 
-                    res?.data?.confirmation && await confirmation(res.data.confirmation);
+                    res?.data?.confirmation &&
+                        (await confirmation(res.data.confirmation));
 
                     res.data.tableReqload && table.ajax && table.ajax.reload();
-
                 } else if (!res.success) {
                     Swal.fire({
                         title: "Error!!",
                         text: res.message,
-                        icon: "error"
+                        icon: "error",
                     });
                 } else {
                     Swal.fire({
                         title: "Error!!",
                         text: "Something Went wrong!!",
-                        icon: "error"
+                        icon: "error",
                     });
                 }
             } catch (error) {
                 toggleLoader();
-                toastr.error(error)
+                toastr.error(error);
             }
-
         }
     });
 }
 
-
 const toastr = {
     success: (message) => {
-        showSuccessToast('Success!', message);
+        showSuccessToast("Success!", message);
     },
     error: (message) => {
         showDangerToast("Error!", message);
-    }
+    },
 };
 
 const validationConfig = {
     errorPlacement: function (error, element) {
-        if (element.closest('.input-group')?.length) {
-            error.insertAfter(element.closest('.input-group'));
+        if (element.closest(".input-group")?.length) {
+            error.insertAfter(element.closest(".input-group"));
         } else {
-            if ($(element).hasClass("after-parent") || $(element).closest(".after-parent")) {
+            if (
+                $(element).hasClass("after-parent") ||
+                $(element).closest(".after-parent")
+            ) {
                 let parent;
-                if($(element).closest(".after-parent")){
+                if ($(element).closest(".after-parent")) {
                     parent = $(element).closest(".after-parent")[0];
-                }else{
+                } else {
                     parent = $(element).parent()[0];
                 }
                 error.addClass("text-center w-100").insertAfter(parent);
@@ -552,7 +620,5 @@ const validationConfig = {
                 error.insertAfter(element);
             }
         }
-    }
+    },
 };
-
-

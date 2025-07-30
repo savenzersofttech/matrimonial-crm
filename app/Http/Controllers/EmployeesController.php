@@ -35,15 +35,15 @@ class EmployeesController extends Controller
 
     public function showAll(Request $request)
     {
-        $dbColumns = (new Employee)->getFillable(); // Assuming fillable columns like 'user_id', 'joining_date', etc.
+        $dbColumns = (new Employee)->getFillable();
         $order = $request->post('order');
         $start = $request->post('start') ?? 0;
         $length = $request->post('length') ?? 10;
         $search = $request->post('search')['value'] ?? null;
 
         // Base query with relations (if needed)
-        $query = Employee::with(['user:id,name,email,role']) // join related user
-            ->select('employees.*'); // ensure employee fields are selected
+        $query = Employee::with(['user:id,name,email,role']) 
+            ->select('employees.*'); 
 
         // Search
         if ($search) {

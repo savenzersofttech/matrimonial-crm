@@ -6,10 +6,14 @@ use App\Http\Controllers\Controller;
 use App\Models\Lead;
 use App\Models\Profile;
 use App\Models\ProfileSource;
+use App\Models\LeadActivity;
+use App\Models\User;
+use App\Models\LeadLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use App\Traits\{GeneratesProfileId, HasDatatable};
+use Illuminate\Support\Facades\Auth;
 
 class LeadController extends Controller
 {
@@ -30,9 +34,9 @@ class LeadController extends Controller
 
         // $query = Lead::selectRaw('*')->with(['profile:id,name,email,phone_number']);
         $query = Lead::with([
-    'profile:id,name,email,phone_number,profile_source_id,profile_source_comment',
-    'profile.profileSource:id,name'
-]);
+            'profile:id,name,email,phone_number,profile_source_id,profile_source_comment',
+            'profile.profileSource:id,name'
+        ]);
 
         // Search filter
         if ($search) {
@@ -98,6 +102,8 @@ class LeadController extends Controller
         ]);
     }
 
+
+
     public function store(Request $request)
     {
         try {
@@ -108,7 +114,7 @@ class LeadController extends Controller
             $validator = Validator::make($request->all(), [
                 'name' => 'required|string|max:225',
                 'email' => 'required|email|unique:profiles,email',
-                'phone_number' => 'required|string|max:20',
+                'phone_number' => 'required|string|unique:profiles,phone_number',
                 'status' => 'required|string|in:New,Contacted,Follow Up,Qualified,Not Interested,Lost,Converted',
                 'profile_source_id' => 'required|exists:profile_sources,id',
                 'note' => 'nullable|string',
@@ -117,17 +123,15 @@ class LeadController extends Controller
             ]);
 
             if ($validator->fails()) {
-                return response()->json(
-                    [
-                        'validationError' => $validator->errors(),
-                        'message' => 'Validation failed',
-                    ],
-                    422,
-                );
+                return response()->json([
+                    'validationError' => $validator->errors(),
+                    'message' => 'Validation failed',
+                ], 422);
             }
 
             DB::beginTransaction();
 
+            // Profile
             $profile = Profile::create([
                 'profile_id' => $this->generateProfileId($request->name, $request->phone_number),
                 'name' => $request->name,
@@ -137,11 +141,34 @@ class LeadController extends Controller
                 'profile_source_comment' => $request->source_comment,
             ]);
 
-            Lead::create([
+            // Lead
+            $lead = Lead::create([
                 'profile_id' => $profile->id,
                 'status' => $request->status,
                 'note' => $request->note,
                 'follow_up' => $request->follow_up,
+                'created_by' => auth()->id(),
+            ]);
+
+            // Log Entry
+            LeadLog::create([
+                'lead_id' => $lead->id,
+                'profile_id' => $profile->id,
+                'action' => 'created',
+                'user_id' => auth()->id(),
+                'changes' => json_encode([
+                    'status' => $request->status,
+                    'note' => $request->note,
+                ])
+            ]);
+
+            // Optionally: create initial lead activity (basic)
+            LeadActivity::create([
+                'lead_id' => $lead->id,
+                'type' => 'Call',
+                'notes' => $request->note ?? 'Initial creation',
+                'status' => $request->status,
+                'outcome' => null,
             ]);
 
             DB::commit();
@@ -152,15 +179,14 @@ class LeadController extends Controller
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->json(
-                [
-                    'validationError' => $e->getMessage(),
-                    'message' => 'An error occurred while saving.',
-                ],
-                500,
-            );
+            return response()->json([
+                'validationError' => $e->getMessage(),
+                'message' => 'An error occurred while saving.',
+            ], 500);
         }
     }
+
+
 
  
 

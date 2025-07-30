@@ -3,7 +3,8 @@
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Admin\{
     DashboardController as AdminDashboard,
-    LeadAssignmentController
+    LeadAssignmentController,
+    SalesTargetController,
 };
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
@@ -27,7 +28,7 @@ use App\Http\Controllers\ProfileAssignmentController;
 //sales
 use App\Http\Controllers\Sales\{
     LeadController,
-    SalesTrackingController,
+    LeadActivityController,
     LeadManagementController,
     TargetSettingController,
     TodayTaskController,
@@ -88,6 +89,7 @@ foreach (['admin','super-admin', 'sales', 'services'] as $role) {
         Route::post('profiles/casts', [CustomerProfileController::class, 'showCasts'])->name("$role.profiles.showCasts");
         Route::get('profiles/next-id', [CustomerProfileController::class, 'peekNextProfileId'])->name("$role.profiles.nextId");
         Route::get('profiles/pdf', [CustomerProfileController::class, 'downloadProfilePdf'])->name("$role.profiles.pdf");
+        
     });
 }
 
@@ -115,6 +117,7 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
 
     Route::resource('assigns', ProfileAssignmentController::class);
     Route::resource('lead_assignments', LeadAssignmentController::class);
+    Route::resource('sales-targets', SalesTargetController::class);
 });
 
 
@@ -124,7 +127,7 @@ Route::middleware(['auth'])->prefix('sales')->name('sales.')->group(function () 
     Route::get('/dashboard', [SalesController::class, 'index'])->name('dashboard');
     Route::resource('leads', LeadController::class);
     
-    Route::resource('sales', SalesTrackingController::class);
+    Route::resource('sales', LeadActivityController::class);
     Route::resource('target', TargetSettingController::class);
     Route::resource('tasks', TodayTaskController::class);
     Route::resource('follow-up', FollowUpController::class);

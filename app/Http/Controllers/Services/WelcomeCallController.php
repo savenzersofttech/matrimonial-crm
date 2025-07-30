@@ -22,7 +22,7 @@ class WelcomeCallController extends Controller
     {
         $employeeId = Auth::id();
         $assignProfileIds = ProfileEmployeeAssignment::where('employee_id', $employeeId)->pluck('profile_id');
-        $calls = WelcomeCall::with(['profile:id,name,email,phone', 'profileAssignment.assignedByUser', 'followUpHistories' => function ($query) {
+        $calls = WelcomeCall::with(['profile:id,name,email,phone_number', 'profileAssignment.assignedBy', 'followUpHistories' => function ($query) {
             $query->latest('follow_up_date')->first(); // Works with datetime
         }])
         ->whereIn('profile_id', $assignProfileIds)
@@ -79,7 +79,7 @@ class WelcomeCallController extends Controller
     'name' => 'required|string',
     'phone_code' => 'required|string',
       'email' => 'nullable|email|unique:profiles,email,' . $profileId,
-    'phone' => 'nullable|unique:profiles,phone,' . $profileId,
+    'phone_number' => 'nullable|unique:profiles,phone_number,' . $profileId,
     'status' => 'required|string',
     'follow_up_date' => 'nullable|date_format:Y-m-d H:i',
     'comment' => 'nullable|string',
@@ -95,7 +95,7 @@ class WelcomeCallController extends Controller
         if ($welcomeCall->profile) {
     $welcomeCall->profile->update([
         'name' => Str::ucfirst($request->name),
-        'phone' =>$request->phone_code . "-" .  $request->phone,
+        'phone_number' =>$request->phone_code . "-" .  $request->phone_number,
         'email' => $request->email,
     ]);
 }

@@ -18,6 +18,9 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\View\View;
 use Illuminate\Support\Facades\URL;
 use Auth;
+use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 class CustomerProfileController extends Controller
 {
 
@@ -72,6 +75,7 @@ class CustomerProfileController extends Controller
     
 
         $dbColumns = (new Profile)->getFillable();
+        // dd($dbColumns);
         $order     = $request->post('order');
         $start     = $request->post('start') ?? 0;
         $length    = $request->post('length') ?? 10;
@@ -95,15 +99,16 @@ class CustomerProfileController extends Controller
 
         // Order
         if (isset($order[0]['dir'])) {
-            $dir      = $order[0]['dir'];
-            $colIndex = $order[0]['column'] ?? false;
-            $col      = $dbColumns[$colIndex] ?? false;
-            if ($col) {
-                $query->orderBy($col, $dir);
-            }
-        } else {
-            $query->orderBy('profiles.id', 'desc');
+    $dir      = $order[0]['dir'];
+    $colIndex = $order[0]['column'] ?? false;
+    $col      = $dbColumns[$colIndex] ?? false;
+    if ($col) {
+            $query->orderBy($col, $dir);
         }
+    } else {
+        $query->orderBy('profiles.id', 'desc'); // Default fallback
+    }
+
 
         // Count recordsFiltered before applying limit & offset
         $recordsFiltered = $query->count(DB::raw($start ? "$start" : "1"));
@@ -173,289 +178,220 @@ class CustomerProfileController extends Controller
      */
     public function store(Request $request)
     {
-        // Normalize phone numbers
+        /** -----------------------------------
+         * 1. Normalize phone numbers
+         * ----------------------------------- */
         $request->merge([
-            'phone_number'             => $request->phone_code . preg_replace('/\s+/', '', $request->phone_number),
+            'phone_number' => $request->phone_code . preg_replace('/\s+/', '', $request->phone_number),
             'alternative_phone_number' => $request->filled('alternative_phone_number')
-            ? $request->alternative_phone_code . preg_replace('/\s+/', '', $request->alternative_phone_number)
-            : null,
+                ? $request->alternative_phone_code . preg_replace('/\s+/', '', $request->alternative_phone_number)
+                : null,
         ]);
-
+    
+        /** -----------------------------------
+         * 2. Handle partner preferences (array fields)
+         * ----------------------------------- */
         $partner = $request->input('partner', []);
-
         $partnerArrayFields = [
-            'manglik_status',
-            'highest_qualification',
-            'education_field',
-            'employer_name',
-            'profession',
-            'diet',
-            'drinking_status',
-            'smoking_status',
-            'marital_status',
-            'mother_tongue',
-            'religion',
-            'caste',
-            'grow_up_in',
+            'manglik_status', 'highest_qualification', 'citizenship', 'education_field', 'employer_name',
+            'profession', 'diet', 'drinking_status', 'smoking_status', 'marital_status',
+            'mother_tongue', 'religion', 'caste', 'annual_income', 'grow_up_in',
+            'country', 'state', 'city',
         ];
-
+    
         foreach ($partnerArrayFields as $field) {
             $value = $partner[$field] ?? null;
-
-            // nothing selected → drop the key entirely
+    
             if (blank($value)) {
                 unset($partner[$field]);
                 continue;
             }
-
-            // if it’s already an array, clean it; otherwise wrap it
-            $partner[$field] = is_array($value)
-            ? array_values(array_filter($value, fn($v) => filled($v)))
-            : [$value];
+    
+            $partner[$field] = json_encode(
+                is_array($value)
+                    ? array_values(array_filter($value, fn($v) => filled($v)))
+                    : [$value]
+            );
         }
-
         $request->merge(['partner' => $partner]);
-
-        /* -----------------------------------------------------------------
-        | 2. Top‑level array‑capable fields  (grow_up_in, …)
-        * ----------------------------------------------------------------*/
-
+    
+        /** -----------------------------------
+         * 3. Handle top-level array fields (other arrays)
+         * ----------------------------------- */
         $topArrayFields = ['grow_up_in', 'highest_qualification', 'education_field', 'profession'];
-
         foreach ($topArrayFields as $field) {
             $value = $request->input($field);
-
             if (blank($value)) {
-                // remove completely so nothing is stored
                 $request->request->remove($field);
                 continue;
             }
-
             $cleaned = is_array($value)
-            ? array_values(array_filter($value, fn($v) => filled($v)))
-            : [$value];
-
+                ? array_values(array_filter($value, fn($v) => filled($v)))
+                : [$value];
             $request->merge([$field => $cleaned]);
         }
-
-        // Validation
+    
+        /** -----------------------------------
+         * 4. Validation
+         * ----------------------------------- */
         $validator = Validator::make($request->all(), [
-            'profile_source_id'               => 'required|exists:profile_sources,id',
-            'profile_source_comment'          => 'nullable|string',
-            'name'                            => 'required|string|max:255',
-            'gender'                          => 'required|in:Male,Female',
-            'email'                           => 'nullable|email|unique:profiles,email',
-            'alternative_email'               => 'nullable|email|unique:profiles,alternative_email',
-            'phone_number'                    => 'required|string|regex:/^\+\d{10,15}$/|unique:profiles,phone_number',
-            'alternative_phone_number'        => 'nullable|string|regex:/^\+\d{10,15}$/|unique:profiles,alternative_phone_number',
-            'contact_person_name'             => 'nullable|string|max:255',
-            'profile_for'                     => 'nullable|string|max:255',
-            'date_of_birth'                   => 'nullable|date',
-            'marital_status'                  => 'nullable|string|max:255',
-            'height'                          => 'nullable|string|max:255',
-            'mother_tongue'                   => 'nullable|string|max:255',
-            'weight'                          => 'nullable|integer|min:0|max:500',
-            'body_type'                       => 'nullable|string|max:255',
-            'complexion'                      => 'nullable|string|max:255',
-            'blood_group'                     => 'nullable|string|max:255',
-            'health_status'                   => 'nullable|string|max:255',
-            'native_place'                    => 'nullable|string|max:255',
-            'country'                         => 'nullable|string|max:255',
-            'state'                           => 'nullable|string|max:255',
-            'city'                            => 'nullable|string|max:255',
-            'citizenship'                     => 'nullable|string|max:255',
-            'grow_up_in'                      => 'nullable|array',
-            'grow_up_in.*'                    => 'nullable|string|max:255',
-            'government_id.*'                 => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
-            'photo.*'                         => 'nullable|file|mimes:jpg,jpeg,png|max:2048',
-            'password'                        => 'nullable|string|min:8|confirmed',
-            'bio'                             => 'nullable|string',
-            'religion'                        => 'nullable|string|max:255',
-            'caste'                           => 'nullable|string|max:255',
-            'sub_caste'                       => 'nullable|string|max:255',
-            'gotra'                           => 'nullable|string|max:255',
-            'birth_time'                      => 'nullable|date_format:H:i',
-            'birth_place'                     => 'nullable|string|max:255',
-            'manglik_status'                  => 'nullable|string|max:255',
-            'highest_qualification'           => 'nullable|array',
-            'highest_qualification.*'         => 'nullable|string|max:255',
-            'education_field'                 => 'nullable|array',
-            'education_field.*'               => 'nullable|string|max:255',
-            'institute_name'                  => 'nullable|string|max:255',
-            'work_location'                   => 'nullable|string|max:255',
-            'employer_name'                   => 'nullable|string|max:255',
-            'profession'                      => 'nullable|array',
-            'profession.*'                    => 'nullable|string|max:255',
-            'business_name'                   => 'nullable|string|max:255',
-            'designation'                     => 'nullable|string|max:255',
-            'annual_income'                   => 'nullable|string|max:255',
-            'diet'                            => 'nullable|string|max:255',
-            'drinking_status'                 => 'nullable|string|max:255',
-            'smoking_status'                  => 'nullable|string|max:255',
-            'father_occupation'               => 'nullable|string|max:255',
-            'mother_occupation'               => 'nullable|string|max:255',
-            'brother_count'                   => 'nullable|integer|min:0|max:5',
-            'married_brother_count'           => 'nullable|integer|min:0|max:5',
-            'sister_count'                    => 'nullable|integer|min:0|max:5',
-            'married_sister_count'            => 'nullable|integer|min:0|max:5',
-            'family_type'                     => 'nullable|string|max:255',
-            'family_affluence'                => 'nullable|string|max:255',
-            'family_values'                   => 'nullable|string|max:255',
-            'family_bio'                      => 'nullable|string',
-
-            // Partner preference
-            'partner.min_age'                 => 'nullable|integer|min:18|max:100',
-            'partner.max_age'                 => 'nullable|integer|min:18|max:100',
-            'partner.min_height'              => 'nullable|string|max:255',
-            'partner.max_height'              => 'nullable|string|max:255',
-            'partner.marital_status'          => 'nullable|array',
-            'partner.marital_status.*'        => 'nullable|string|max:255',
-            'partner.mother_tongue'           => 'nullable|array',
-            'partner.mother_tongue.*'         => 'nullable|string|max:255',
-            'partner.religion'                => 'nullable|array',
-            'partner.religion.*'              => 'nullable|string|max:255',
-            'partner.caste'                   => 'nullable|array',
-            'partner.caste.*'                 => 'nullable|string|max:255',
-            'partner.manglik_status'          => 'nullable|array',
-            'partner.manglik_status.*'        => 'nullable|string|max:255',
-            'partner.country'                 => 'nullable|string|max:255',
-            'partner.state'                   => 'nullable|string|max:255',
-            'partner.city'                    => 'nullable|string|max:255',
-            'partner.citizenship'             => 'nullable|string|max:255',
-            'partner.grow_up_in'              => 'nullable|array',
-            'partner.grow_up_in.*'            => 'nullable|string|max:255',
-            'partner.highest_qualification'   => 'nullable|array',
-            'partner.highest_qualification.*' => 'nullable|string|max:255',
-            'partner.education_field'         => 'nullable|array',
-            'partner.education_field.*'       => 'nullable|string|max:255',
-            'partner.employer_name'           => 'nullable|array',
-            'partner.employer_name.*'         => 'nullable|string|max:255',
-            'partner.profession'              => 'nullable|array',
-            'partner.profession.*'            => 'nullable|string|max:255',
-            'partner.designation'             => 'nullable|string|max:255',
-            'partner.annual_income'           => 'nullable|string|max:255',
-            'partner.diet'                    => 'nullable|array',
-            'partner.diet.*'                  => 'nullable|string|max:255',
-            'partner.drinking_status'         => 'nullable|array',
-            'partner.drinking_status.*'       => 'nullable|string|max:255',
-            'partner.smoking_status'          => 'nullable|array',
-            'partner.smoking_status.*'        => 'nullable|string|max:255',
-            'partner.about'                   => 'nullable|string',
+            'profile_source_id' => 'exists:profile_sources,id',
+            'profile_source_comment' => 'nullable|string',
+            'name' => 'required|string|max:255',
+            'gender' => 'required|in:Male,Female',
+            'email' => ['nullable', 'email', Rule::unique('profiles', 'email')],
+            'alternative_email' => ['nullable', 'email', Rule::unique('profiles', 'alternative_email')],
+            'phone_number' => ['required', 'string', 'regex:/^\+\d{10,15}$/', Rule::unique('profiles', 'phone_number')],
+            'alternative_phone_number' => ['nullable', 'string', 'regex:/^\+\d{10,15}$/', Rule::unique('profiles', 'alternative_phone_number')],
+            // 'govt_id_status' => 'nullable|string|in:verified,non_verified',
+            'govt_id_status' => 'nullable|in:1,0',
+            'government_id' => 'nullable|array|max:5',
+            'government_id.*' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
+            'photo' => 'nullable|array|max:5',
+            'photo.*' => 'nullable|file|mimes:jpg,jpeg,png|max:2048',
+            'contact_person_name' => 'nullable|string|max:255',
+            'profile_for' => 'nullable|string',
+            'date_of_birth' => 'nullable|date',
+            'marital_status' => 'nullable|string',
+            'height' => 'nullable|string',
+            'mother_tongue' => 'nullable|string',
+            'weight' => 'nullable|numeric',
+            'body_type' => 'nullable|string',
+            'complexion' => 'nullable|string',
+            'blood_group' => 'nullable|string',
+            'health_status' => 'nullable|string',
+            'native_place' => 'nullable|string',
+            'country' => 'nullable|string',
+            'state' => 'nullable|string',
+            'city' => 'nullable|string',
+            'bio' => 'nullable|string|min:200',
+            'religion' => 'nullable|string',
+            'caste' => 'nullable|string',
+            'sub_caste' => 'nullable|string',
+            'gotra' => 'nullable|string',
+            'birth_time' => 'nullable|date_format:H:i',
+            'birth_place' => 'nullable|string',
+            'manglik_status' => 'nullable|string',
+            'institute_name' => 'nullable|string',
+            'work_location' => 'nullable|string',
+            'employer_name' => 'nullable|string',
+            'business_name' => 'nullable|string',
+            'designation' => 'nullable|string',
+            'annual_income' => 'nullable|string',
+            'diet' => 'nullable|string',
+            'drinking_status' => 'nullable|string',
+            'smoking_status' => 'nullable|string',
+            'father_occupation' => 'nullable|string',
+            'mother_occupation' => 'nullable|string',
+            'brother_count' => 'nullable|integer|min:0|max:5',
+            'married_brother_count' => 'nullable|integer|min:0|max:5',
+            'sister_count' => 'nullable|integer|min:0|max:5',
+            'married_sister_count' => 'nullable|integer|min:0|max:5',
+            'family_type' => 'nullable|string',
+            'family_affluence' => 'nullable|string',
+            'family_values' => 'nullable|string',
+            'family_bio' => 'nullable|string|min:200',
+            'password' => 'nullable|string|min:8|confirmed',
+    
+            // Partner validations
+            'partner.min_age' => 'nullable|integer|min:18|max:100',
+            'partner.max_age' => 'nullable|integer|min:18|max:100',
+            'partner.min_height' => 'nullable|string',
+            'partner.max_height' => 'nullable|string',
+            'partner.country' => 'nullable|json',
+            'partner.state' => 'nullable|json',
+            'partner.city' => 'nullable|json',
+            'partner.citizenship' => 'nullable|string',
+            'partner.designation' => 'nullable|string',
+            'partner.annual_income' => 'nullable|json',
+            'partner.annual_income.*' => 'nullable|string',
+            'partner.about' => 'nullable|string',
         ]);
-
+    
+        // Custom validation logic
+        $validator->after(function ($validator) use ($request) {
+            if ($request->filled('married_brother_count') && $request->filled('brother_count') && $request->married_brother_count > $request->brother_count) {
+                $validator->errors()->add('married_brother_count', 'Married brothers cannot exceed total brothers.');
+            }
+            if ($request->filled('married_sister_count') && $request->filled('sister_count') && $request->married_sister_count > $request->sister_count) {
+                $validator->errors()->add('married_sister_count', 'Married sisters cannot exceed total sisters.');
+            }
+        });
+    
         if ($validator->fails()) {
             return response()->json(['validationError' => $validator->errors()], 200);
         }
-
-        // Build profile data
+    
+        /** -----------------------------------
+         * 5. Build profile data for saving
+         * ----------------------------------- */
         $profileData = $request->only([
-            'profile_source_id',
-            'profile_source_comment',
-            'email',
-            'alternative_email',
-            'phone_number',
-            'alternative_phone_number',
-            'contact_person_name',
-            'profile_for',
-            'name',
-            'gender',
-            'date_of_birth',
-            'marital_status',
-            'height',
-            'mother_tongue',
-            'weight',
-            'body_type',
-            'complexion',
-            'blood_group',
-            'health_status',
-            'native_place',
-            'country',
-            'state',
-            'city',
-            'citizenship',
-            'bio',
-            'religion',
-            'caste',
-            'sub_caste',
-            'gotra',
-            'birth_time',
-            'birth_place',
-            'manglik_status',
-            'institute_name',
-            'work_location',
-            'employer_name',
-            'business_name',
-            'designation',
-            'annual_income',
-            'diet',
-            'drinking_status',
-            'smoking_status',
-            'father_occupation',
-            'mother_occupation',
-            'brother_count',
-            'married_brother_count',
-            'sister_count',
-            'married_sister_count',
-            'family_type',
-            'family_affluence',
-            'family_values',
-            'family_bio',
+            'profile_source_id', 'govt_id_status', 'profile_source_comment', 'email', 'alternative_email',
+            'phone_number', 'alternative_phone_number', 'contact_person_name', 'profile_for',
+            'name', 'gender', 'date_of_birth', 'marital_status', 'height', 'mother_tongue',
+            'weight', 'body_type', 'complexion', 'blood_group', 'health_status', 'native_place',
+            'country', 'state', 'city', 'bio', 'religion', 'caste', 'sub_caste',
+            'gotra', 'birth_time', 'birth_place', 'manglik_status', 'institute_name',
+            'work_location', 'employer_name', 'business_name', 'designation', 'annual_income',
+            'diet', 'drinking_status', 'smoking_status', 'father_occupation', 'mother_occupation',
+            'brother_count', 'married_brother_count', 'sister_count', 'married_sister_count',
+            'family_type', 'family_affluence', 'family_values', 'family_bio',
         ]);
-
-        // Encode arrays
+    
+        // Convert top-level arrays to JSON
         foreach ($topArrayFields as $field) {
             if ($request->has($field)) {
                 $profileData[$field] = json_encode($request->input($field));
             }
         }
-
-        // File uploads
-        $profileData['government_id'] = json_encode(array_map(function ($file) {
-            return $file->store('government_ids', 'public');
-        }, $request->file('government_id', [])));
-
-        $profileData['photo'] = json_encode(array_map(function ($file) {
-            return $file->store('photos', 'public');
-        }, $request->file('photo', [])));
-
-        // Password
+    
+        // Convert citizenship array to JSON
+        if ($request->has('citizenship')) {
+            $profileData['citizenship'] = json_encode($request->input('citizenship'));
+        }
+    
+        /** -----------------------------------
+         * 6. Handle file uploads
+         * ----------------------------------- */
+        $namePrefix = Str::slug($request->input('name'), '-') ?: 'profile';
+        $dateTime = now('Asia/Kolkata')->format('Ymd-His');
+        $random = str_pad(mt_rand(0, 999999), 6, '0', STR_PAD_LEFT);
+    
+        if ($request->hasFile('government_id')) {
+            $govtFilePaths = array_map(function ($file, $index) use ($namePrefix, $dateTime, $random) {
+                $filename = "{$namePrefix}-{$dateTime}-" . str_pad((int)$random + $index, 6, '0', STR_PAD_LEFT) . '.' . $file->getClientOriginalExtension();
+                return $file->storeAs('government_ids', $filename, 'public');
+            }, $request->file('government_id'), array_keys($request->file('government_id')));
+            $profileData['government_id'] = json_encode($govtFilePaths);
+        }
+    
+        if ($request->hasFile('photo')) {
+            $photoFilePaths = array_map(function ($file, $index) use ($namePrefix, $dateTime, $random) {
+                $filename = "{$namePrefix}-{$dateTime}-" . str_pad((int)$random + $index, 6, '0', STR_PAD_LEFT) . '.' . $file->getClientOriginalExtension();
+                return $file->storeAs('photos', $filename, 'public');
+            }, $request->file('photo'), array_keys($request->file('photo')));
+            $profileData['photo'] = json_encode($photoFilePaths);
+        }
+    
         if ($request->filled('password')) {
             $profileData['password'] = Hash::make($request->input('password'));
         }
-
+    
         $profileData['created_at'] = now('Asia/Kolkata');
         $profileData['updated_at'] = now('Asia/Kolkata');
         $profileData['profile_id'] = $this->generateProfileId($profileData['name'], $profileData['phone_number']);
-
+    
+        /** -----------------------------------
+         * 7. Save profile & partner preferences
+         * ----------------------------------- */
         $profile = Profile::create($profileData);
-
+    
         // Save partner preferences
-        $partnerData = $request->input('partner', []);
-        foreach ($partnerArrayFields as $field) {
-            if (isset($partnerData[$field])) {
-                $partnerData[$field] = json_encode($partnerData[$field]);
-            }
-        }
-
-        $partnerData = array_merge($partnerData, [
-            'profile_id'    => $profile->id,
-            'min_age'       => $partnerData['min_age'] ?? null,
-            'max_age'       => $partnerData['max_age'] ?? null,
-            'min_height'    => $partnerData['min_height'] ?? null,
-            'max_height'    => $partnerData['max_height'] ?? null,
-            'country'       => $partnerData['country'] ?? null,
-            'state'         => $partnerData['state'] ?? null,
-            'city'          => $partnerData['city'] ?? null,
-            'citizenship'   => $partnerData['citizenship'] ?? null,
-            'designation'   => $partnerData['designation'] ?? null,
-            'annual_income' => $partnerData['annual_income'] ?? null,
-            'about'         => $partnerData['about'] ?? null,
-        ]);
-
-        PartnerPreference::create($partnerData);
-
+        $partner['profile_id'] = $profile->id;
+        $profile->partnerPreference()->create($partner);
+    
         return response()->json([
-            'success'     => 'Profile created successfully.',
+            'success' => 'Profile created successfully.',
             'tableReload' => true,
         ], 200);
     }
@@ -464,42 +400,46 @@ class CustomerProfileController extends Controller
     {
         $profile = Profile::findOrFail($id);
 
-        // Normalize phone numbers
+        /** -----------------------------------
+         * 1. Normalize phone numbers
+         * ----------------------------------- */
         $request->merge([
-            'phone_number'             => $request->phone_code . preg_replace('/\s+/', '', $request->phone_number),
+            'phone_number' => $request->phone_code . preg_replace('/\s+/', '', $request->phone_number),
             'alternative_phone_number' => $request->filled('alternative_phone_number')
-            ? $request->alternative_phone_code . preg_replace('/\s+/', '', $request->alternative_phone_number)
-            : null,
+                ? $request->alternative_phone_code . preg_replace('/\s+/', '', $request->alternative_phone_number)
+                : null,
         ]);
-
-        $partner            = $request->input('partner', []);
+    
+        /** -----------------------------------
+         * 2. Handle partner preferences (array fields)
+         * ----------------------------------- */
+        $partner = $request->input('partner', []);
         $partnerArrayFields = [
-            'manglik_status',
-            'highest_qualification',
-            'education_field',
-            'employer_name',
-            'profession',
-            'diet',
-            'drinking_status',
-            'smoking_status',
-            'marital_status',
-            'mother_tongue',
-            'religion',
-            'caste',
-            'grow_up_in',
+            'manglik_status', 'highest_qualification', 'citizenship', 'education_field', 'employer_name',
+            'profession', 'diet', 'drinking_status', 'smoking_status', 'marital_status',
+            'mother_tongue', 'religion', 'caste', 'annual_income', 'grow_up_in',
+            'country', 'state', 'city',
         ];
-
+    
         foreach ($partnerArrayFields as $field) {
             $value = $partner[$field] ?? null;
+    
             if (blank($value)) {
                 unset($partner[$field]);
                 continue;
             }
-            $partner[$field] = is_array($value) ? array_values(array_filter($value)) : [$value];
+    
+            $partner[$field] = json_encode(
+                is_array($value)
+                    ? array_values(array_filter($value, fn($v) => filled($v)))
+                    : [$value]
+            );
         }
-
         $request->merge(['partner' => $partner]);
-
+    
+        /** -----------------------------------
+         * 3. Handle top-level array fields (other arrays)
+         * ----------------------------------- */
         $topArrayFields = ['grow_up_in', 'highest_qualification', 'education_field', 'profession'];
         foreach ($topArrayFields as $field) {
             $value = $request->input($field);
@@ -507,95 +447,179 @@ class CustomerProfileController extends Controller
                 $request->request->remove($field);
                 continue;
             }
-            $request->merge([$field => is_array($value) ? array_values(array_filter($value)) : [$value]]);
+            $cleaned = is_array($value)
+                ? array_values(array_filter($value, fn($v) => filled($v)))
+                : [$value];
+            $request->merge([$field => $cleaned]);
         }
-
-        // Validation
+    
+        /** -----------------------------------
+         * 4. Validation
+         * ----------------------------------- */
         $validator = Validator::make($request->all(), [
-            'profile_source_id'        => 'required|exists:profile_sources,id',
-            'name'                     => 'required|string|max:255',
-            'gender'                   => 'required|in:Male,Female',
-            'email'                    => 'nullable|email|unique:profiles,email,' . $id,
-            'alternative_email'        => 'nullable|email|unique:profiles,alternative_email,' . $id,
-            'phone_number'             => 'required|string|regex:/^\+\d{10,15}$/|unique:profiles,phone_number,' . $id,
-            'alternative_phone_number' => 'nullable|string|regex:/^\+\d{10,15}$/|unique:profiles,alternative_phone_number,' . $id,
-            // ... keep all other validation rules the same as in store()
+            'profile_source_id' => 'exists:profile_sources,id',
+            'profile_source_comment' => 'nullable|string',
+            'name' => 'required|string|max:255',
+            'gender' => 'required|in:Male,Female',
+            'email' => ['nullable', 'email'],
+            'alternative_email' => ['nullable', 'email'],
+            'phone_number' => ['required', 'string', 'regex:/^\+\d{10,15}$/'],
+            'alternative_phone_number' => ['nullable', 'string', 'regex:/^\+\d{10,15}$/'],
+            // 'govt_id_status' => 'nullable|string|in:verified,non_verified',
+            'govt_id_status' => 'nullable|in:1,0',
+            'government_id' => 'nullable|array|max:5',
+            'government_id.*' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
+            'photo' => 'nullable|array|max:5',
+            'photo.*' => 'nullable|file|mimes:jpg,jpeg,png|max:2048',
+            'contact_person_name' => 'nullable|string|max:255',
+            'profile_for' => 'nullable|string',
+            'date_of_birth' => 'nullable|date',
+            'marital_status' => 'nullable|string',
+            'height' => 'nullable|string',
+            'mother_tongue' => 'nullable|string',
+            'weight' => 'nullable|numeric',
+            'body_type' => 'nullable|string',
+            'complexion' => 'nullable|string',
+            'blood_group' => 'nullable|string',
+            'health_status' => 'nullable|string',
+            'native_place' => 'nullable|string',
+            'country' => 'nullable|string',
+            'state' => 'nullable|string',
+            'city' => 'nullable|string',
+            'bio' => 'nullable|string|min:200',
+            'religion' => 'nullable|string',
+            'caste' => 'nullable|string',
+            'sub_caste' => 'nullable|string',
+            'gotra' => 'nullable|string',
+            'birth_time' => 'nullable|date_format:H:i',
+            'birth_place' => 'nullable|string',
+            'manglik_status' => 'nullable|string',
+            'institute_name' => 'nullable|string',
+            'work_location' => 'nullable|string',
+            'employer_name' => 'nullable|string',
+            'business_name' => 'nullable|string',
+            'designation' => 'nullable|string',
+            'annual_income' => 'nullable|string',
+            'diet' => 'nullable|string',
+            'drinking_status' => 'nullable|string',
+            'smoking_status' => 'nullable|string',
+            'father_occupation' => 'nullable|string',
+            'mother_occupation' => 'nullable|string',
+            'brother_count' => 'nullable|integer|min:0|max:5',
+            'married_brother_count' => 'nullable|integer|min:0|max:5',
+            'sister_count' => 'nullable|integer|min:0|max:5',
+            'married_sister_count' => 'nullable|integer|min:0|max:5',
+            'family_type' => 'nullable|string',
+            'family_affluence' => 'nullable|string',
+            'family_values' => 'nullable|string',
+            'family_bio' => 'nullable|string|min:200',
+            'password' => 'nullable|string|min:8|confirmed',
+    
+            // Partner validations
+            'partner.min_age' => 'nullable|integer|min:18|max:100',
+            'partner.max_age' => 'nullable|integer|min:18|max:100',
+            'partner.min_height' => 'nullable|string',
+            'partner.max_height' => 'nullable|string',
+            'partner.country' => 'nullable|json',
+            'partner.state' => 'nullable|json',
+            'partner.city' => 'nullable|json',
+            'partner.citizenship' => 'nullable|string',
+            'partner.designation' => 'nullable|string',
+            'partner.annual_income' => 'nullable|json',
+            'partner.annual_income.*' => 'nullable|string',
+            'partner.about' => 'nullable|string',
         ]);
+
+        $validator->after(function ($validator) use ($request) {
+            if ($request->filled('married_brother_count') && $request->filled('brother_count') && $request->married_brother_count > $request->brother_count) {
+                $validator->errors()->add('married_brother_count', 'Married brothers cannot exceed total brothers.');
+            }
+            if ($request->filled('married_sister_count') && $request->filled('sister_count') && $request->married_sister_count > $request->sister_count) {
+                $validator->errors()->add('married_sister_count', 'Married sisters cannot exceed total sisters.');
+            }
+        });
 
         if ($validator->fails()) {
             return response()->json(['validationError' => $validator->errors()], 200);
         }
 
-        // Build profile update data
+        // Build profile data
         $profileData = $request->only([
-            'profile_source_id',
-            'profile_source_comment',
-            'email',
-            'alternative_email',
-            'phone_number',
-            'alternative_phone_number',
-            'contact_person_name',
-            'profile_for',
-            'name',
-            'gender',
-            'date_of_birth',
-            'marital_status',
-            'height',
-            'mother_tongue',
-            'weight',
-            'body_type',
-            'complexion',
-            'blood_group',
-            'health_status',
-            'native_place',
-            'country',
-            'state',
-            'city',
-            'citizenship',
-            'bio',
-            'religion',
-            'caste',
-            'sub_caste',
-            'gotra',
-            'birth_time',
-            'birth_place',
-            'manglik_status',
-            'institute_name',
-            'work_location',
-            'employer_name',
-            'business_name',
-            'designation',
-            'annual_income',
-            'diet',
-            'drinking_status',
-            'smoking_status',
-            'father_occupation',
-            'mother_occupation',
-            'brother_count',
-            'married_brother_count',
-            'sister_count',
-            'married_sister_count',
-            'family_type',
-            'family_affluence',
-            'family_values',
-            'family_bio',
+            'profile_source_id', 'profile_source_comment', 'email', 'alternative_email',
+            'phone_number', 'alternative_phone_number', 'contact_person_name', 'profile_for',
+            'name', 'gender', 'date_of_birth', 'marital_status', 'height', 'mother_tongue',
+            'weight', 'body_type', 'complexion', 'blood_group', 'health_status', 'native_place',
+            'country', 'state', 'city', 'citizenship', 'bio', 'religion', 'caste', 'sub_caste',
+            'gotra', 'birth_time', 'birth_place', 'manglik_status', 'institute_name',
+            'work_location', 'employer_name', 'business_name', 'designation', 'annual_income',
+            'diet', 'drinking_status', 'smoking_status', 'father_occupation', 'mother_occupation',
+            'brother_count', 'married_brother_count', 'sister_count', 'married_sister_count',
+            'family_type', 'family_affluence', 'family_values', 'family_bio',
         ]);
 
+        // Encode array fields
+        $topArrayFields = ['grow_up_in', 'highest_qualification', 'education_field', 'profession'];
         foreach ($topArrayFields as $field) {
             if ($request->has($field)) {
                 $profileData[$field] = json_encode($request->input($field));
+            } else {
+                $profileData[$field] = $profile->$field; // Preserve existing value
             }
         }
 
-        // File uploads
+        // Generate custom filename prefix
+        $namePrefix = Str::slug($request->input('name'), '-') ?: 'profile';
+        $dateTime = now('Asia/Kolkata')->format('Ymd-His');
+        $random = str_pad(mt_rand(0, 999999), 6, '0', STR_PAD_LEFT);
+
+        // Handle file uploads
         if ($request->hasFile('government_id')) {
-            $profileData['government_id'] = json_encode(array_map(fn($file) => $file->store('government_ids', 'public'), $request->file('government_id')));
+            // Delete existing files
+            $existingGovtFiles = json_decode($profile->government_id, true) ?? [];
+            // Store new files
+            $govtFiles = $request->file('government_id');
+            if (count($govtFiles) > 5) {
+                return response()->json(['validationError' => ['government_id' => 'Maximum 5 government ID files allowed.']], 200);
+            }
+            $govtFilePaths = array_map(function ($file, $index) use ($namePrefix, $dateTime, $random) {
+                $extension = $file->getClientOriginalExtension();
+                $filename = "{$namePrefix}-{$dateTime}-" . str_pad((int)$random + $index, 6, '0', STR_PAD_LEFT) . ".{$extension}";
+                return $file->storeAs('government_ids', $filename, 'public');
+            }, $govtFiles, array_keys($govtFiles));
+            // Delete when new inserted
+            foreach ($existingGovtFiles as $filePath) {
+                if (Storage::disk('public')->exists($filePath)) {
+                    Storage::disk('public')->delete($filePath);
+                    Log::info('Deleted Government ID File:', [$filePath]);
+                }
+            }
+            $profileData['government_id'] = json_encode($govtFilePaths);
         }
 
         if ($request->hasFile('photo')) {
-            $profileData['photo'] = json_encode(array_map(fn($file) => $file->store('photos', 'public'), $request->file('photo')));
+            // Delete existing files
+            $existingPhotoFiles = json_decode($profile->photo, true) ?? [];
+            // Store new files
+            $photoFiles = $request->file('photo');
+            if (count($photoFiles) > 5) {
+                return response()->json(['validationError' => ['photo' => 'Maximum 5 photo files allowed.']], 200);
+            }
+            $photoFilePaths = array_map(function ($file, $index) use ($namePrefix, $dateTime, $random) {
+                $extension = $file->getClientOriginalExtension();
+                $filename = "{$namePrefix}-{$dateTime}-" . str_pad((int)$random + $index, 6, '0', STR_PAD_LEFT) . ".{$extension}";
+                return $file->storeAs('photos', $filename, 'public');
+            }, $photoFiles, array_keys($photoFiles));
+            // Delete when new inserted
+            foreach ($existingPhotoFiles as $filePath) {
+                if (Storage::disk('public')->exists($filePath)) {
+                    Storage::disk('public')->delete($filePath);
+                    Log::info('Deleted Photo File:', [$filePath]);
+                }
+            }
+            $profileData['photo'] = json_encode($photoFilePaths);
         }
 
+        // Handle password
         if ($request->filled('password')) {
             $profileData['password'] = Hash::make($request->input('password'));
         }
@@ -605,37 +629,73 @@ class CustomerProfileController extends Controller
 
         // Save or update partner preferences
         $partnerData = $request->input('partner', []);
+        
         foreach ($partnerArrayFields as $field) {
             if (isset($partnerData[$field])) {
-                $partnerData[$field] = json_encode($partnerData[$field]);
+                if (is_array($partnerData[$field])) {
+                    $partnerData[$field] = json_encode($partnerData[$field]); 
+                }
             }
         }
 
         $partnerData = array_merge($partnerData, [
-            'profile_id'    => $profile->id,
-            'min_age'       => $partnerData['min_age'] ?? null,
-            'max_age'       => $partnerData['max_age'] ?? null,
-            'min_height'    => $partnerData['min_height'] ?? null,
-            'max_height'    => $partnerData['max_height'] ?? null,
-            'country'       => $partnerData['country'] ?? null,
-            'state'         => $partnerData['state'] ?? null,
-            'city'          => $partnerData['city'] ?? null,
-            'citizenship'   => $partnerData['citizenship'] ?? null,
-            'designation'   => $partnerData['designation'] ?? null,
-            'annual_income' => $partnerData['annual_income'] ?? null,
-            'about'         => $partnerData['about'] ?? null,
+            'profile_id' => $profile->id,
+            'min_age' => $partnerData['min_age'] ?? null,
+            'max_age' => $partnerData['max_age'] ?? null,
+            'min_height' => $partnerData['min_height'] ?? null,
+            'max_height' => $partnerData['max_height'] ?? null,
+            'citizenship' => $partnerData['citizenship'] ?? null,
+            'designation' => $partnerData['designation'] ?? null,
+            'about' => $partnerData['about'] ?? null,
         ]);
 
-        PartnerPreference::updateOrCreate(
-            ['profile_id' => $profile->id],
-            $partnerData
-        );
+        $profile->partnerPreference()->updateOrCreate(['profile_id' => $profile->id], $partnerData);
+
+        // Log for debugging
+        Log::info('Updated Profile Data:', $profileData);
+        Log::info('Government ID Files:', [$request->file('government_id')]);
+        Log::info('Photo Files:', [$request->file('photo')]);
 
         return response()->json([
-            'success'     => 'Profile updated successfully.',
+            'success' => 'Profile updated successfully.',
             'tableReload' => true,
         ], 200);
     }
+
+    public function deleteFile(Request $request, Profile $profile)
+    {
+        $request->validate([
+            'type' => 'required|in:government_id,photo',
+            'path' => 'required|string',
+            'index' => 'required|integer',
+        ]);
+
+        $type = $request->type;
+        $index = $request->index;
+        $path = $request->path;
+
+        // Decode current files
+        $files = json_decode($profile->$type, true) ?? [];
+
+        if (isset($files[$index]) && $files[$index] === $path) {
+            unset($files[$index]);
+            $files = array_values($files); // Reindex array
+            $profile->$type = $files ? json_encode($files) : null;
+            $profile->save();
+
+            // Delete physical file
+            if (Storage::disk('public')->exists($path)) {
+                Storage::disk('public')->delete($path);
+                Log::info('Deleted File via Endpoint:', [$path]);
+            }
+
+            return response()->json(['success' => 'File deleted successfully']);
+        }
+
+        return response()->json(['error' => 'File not found'], 404);
+    }
+    
+     
 
     /**
      * Remove the specified profile from storage.

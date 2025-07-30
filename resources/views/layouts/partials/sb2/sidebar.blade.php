@@ -49,6 +49,12 @@
                     Assign
                 </a>
 
+                <a class="nav-link {{ request()->routeIs('admin.sales-targets*') ? 'active' : '' }}" href="{{ route('admin.sales-targets.index') }}">
+                    <div class="nav-link-icon"><i data-feather="user-check"></i></div>
+                    Sales Targets
+                </a>
+
+
 
               
                
