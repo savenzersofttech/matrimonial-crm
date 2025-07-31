@@ -184,7 +184,6 @@
                         <button 
                             type="button"
                             data-id="index_${a.id}" 
-                            data-action="/services/payments/${a.id}"
                             onclick="openEditModal(${a.id}, this, event)" 
                             class="btn btn-datatable btn-icon btn-transparent-dark me-2"
                             aria-label="Edit User"
@@ -259,18 +258,7 @@
 
             $(regForm).validate(validationConfig);
 
-            @if ($errors->any())
-                @if (old('plan'))
-                    plan.value = "{{ old('plan') }}";
-                @endif
-
-                @if (old('discount'))
-                    discount.value = "{{ old('discount') }}";
-                @endif
-
-                var FormModalgx = new bootstrap.Modal(document.getElementById('FormModalgx'));
-                FormModalgx.show();
-            @endif
+           
 
 
         });

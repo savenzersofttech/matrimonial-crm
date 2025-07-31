@@ -4,6 +4,9 @@ namespace App\Http\Controllers\Sales;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use App\Models\SalesTarget;
+use App\Models\User;
+use Carbon\Carbon;
 
 class TargetSettingController extends Controller
 {
@@ -12,7 +15,11 @@ class TargetSettingController extends Controller
      */
     public function index()
     {
-        return view('sales.target.index');
+    $salesTarget = SalesTarget::where('user_id', auth()->id())
+        ->orderBy('created_at', 'desc')
+        ->get();
+        // dd($salesTarget->toArray());
+        return view('sales.target.index', compact('salesTarget'));
     }
 
     /**

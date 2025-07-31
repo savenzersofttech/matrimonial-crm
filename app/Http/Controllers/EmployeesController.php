@@ -482,7 +482,7 @@ class EmployeesController extends Controller
             DB::commit();
             return response()->json([
                 'success' => 'Employee deleted successfully.',
-                'tableReqload' => true
+                'tableReload' => true
             ]);
         } catch (\Exception $e) {
             DB::rollBack();

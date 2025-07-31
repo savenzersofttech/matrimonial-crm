@@ -43,6 +43,66 @@ form &&
                     table?.ajax && table.ajax.reload();
                 }
 
+                if (res.confirmation) {
+                    Swal.fire({
+                        title: "Are You Sure",
+                        text: res.success,
+                        icon: "warning",
+                        allowOutsideClick: false,
+                        showCancelButton: true,
+                        confirmButtonText: "Yes",
+                        cancelButtonText: "No"
+                    }).then(async (result) => {
+                        if (result.isConfirmed) {
+                            // Recreate FormData and add 'conform'
+                            const formDataConfirmed = new FormData(form);
+                            formDataConfirmed.append("conform", "yes");
+
+                            // Optional: disable inputs again if needed
+                            form && $("select,input,textarea", form).attr("disabled", true);
+                            startLoadings(button, "Submitting again...");
+
+                            // Send again
+                            const confirmRes = await makeHttpRequest(url, form?.method || "post", formDataConfirmed);
+
+                            // Handle confirmRes just like you handle res
+                            if (confirmRes.success) {
+                                toastr.success(confirmRes.success);
+                                form.reset();
+
+                                
+                                    table?.ajax && table.ajax.reload();
+                                
+
+                                 await window["closeModal"]();
+                            } else {
+                                if (res.validationError) {
+                                    const error = res.validationError;
+
+                                    if (typeof error === 'string') {
+                                        // Single error message as string (e.g., SQL error)
+                                        toastr.error(error);
+                                    } else if (typeof error === 'object') {
+                                        // Laravel-style validation errors (object with arrays or strings)
+                                        Object.keys(error).forEach((key) => {
+                                            if (Array.isArray(error[key])) {
+                                                error[key].forEach((msg) => toastr.error(msg));
+                                            } else if (typeof error[key] === 'string') {
+                                                toastr.error(error[key]);
+                                            }
+                                        });
+                                    }
+                                }
+                            }
+
+                            stopLoadings(button, buttonText);
+                            form && $("select,input,textarea", form).removeAttr("disabled");
+                        }
+                    });
+                    return;
+                }
+
+
                 if (res.sweetAlert) {
                     try {
                         Swal.fire({
@@ -68,7 +128,7 @@ form &&
 
                         try {
                             if (typeof closeBtn !== undefined) closeBtn.click();
-                        } catch (error) {}
+                        } catch (error) { }
                     } catch (error) {
                         alert(error);
                     }
@@ -185,18 +245,18 @@ async function makeHttpRequest(url, method, data, csrf = false) {
 
     config = csrf
         ? {
-              method: method,
-              body: data,
-              headers: {
-                  "X-CSRF-TOKEN": csrfToken,
-                  Accept: "application/json",
-              },
-          }
+            method: method,
+            body: data,
+            headers: {
+                "X-CSRF-TOKEN": csrfToken,
+                Accept: "application/json",
+            },
+        }
         : {
-              method: method,
-              body: data,
-              headers: { Accept: "application/json" },
-          };
+            method: method,
+            body: data,
+            headers: { Accept: "application/json" },
+        };
     try {
         if (method.toLowerCase() == "post") {
             res = await fetch(url, config);
@@ -569,7 +629,7 @@ async function confirmationAndPost(event, data) {
                     res?.data?.confirmation &&
                         (await confirmation(res.data.confirmation));
 
-                    res.data.tableReqload && table.ajax && table.ajax.reload();
+                    res.data.tableReload && table.ajax && table.ajax.reload();
                 } else if (!res.success) {
                     Swal.fire({
                         title: "Error!!",

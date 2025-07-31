@@ -17,6 +17,7 @@ use App\Http\Controllers\Services\{
 
 use App\Http\Controllers\Sales\{ 
     LeadController,
+    LeadActivityController,
 
 };
 
@@ -29,6 +30,7 @@ use App\Http\Controllers\Sales\{
     });
 
     Route::post('/sales-targets/show-all', [SalesTargetController ::class, 'showAll'])->name('admin.sales-targets.showAll.api');
+    Route::post('/sales-activity/show-all', [LeadActivityController::class, 'showAll'])->name('sales.leadactivity.showAll.api');
 
 
             Route::post('/payments/show-all', [PaymentLinkController::class, 'showAll'])->name('services.payments.showAll');

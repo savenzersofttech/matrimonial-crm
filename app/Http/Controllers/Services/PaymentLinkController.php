@@ -165,7 +165,7 @@ class PaymentLinkController extends Controller
 
             return response()->json([
                 'success' => 'Payment link created successfully.',
-                'tableReqload' => true
+                'tableReload' => true
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
@@ -245,7 +245,7 @@ class PaymentLinkController extends Controller
 
         return response()->json([
             'success' => 'Payment link updated successfully.',
-            'tableReqload' => true
+            'tableReload' => true
         ], 200);
     }
 
@@ -257,7 +257,7 @@ class PaymentLinkController extends Controller
 
         return response()->json([
             'success' => 'Payment link deleted successfully.',
-            'tableReqload' => true
+            'tableReload' => true
         ], 200);
 
     } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {

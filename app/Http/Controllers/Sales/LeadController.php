@@ -168,6 +168,7 @@ class LeadController extends Controller
                 'type' => 'Call',
                 'notes' => $request->note ?? 'Initial creation',
                 'status' => $request->status,
+                'follow_up' => $request->follow_up,
                 'outcome' => null,
             ]);
 

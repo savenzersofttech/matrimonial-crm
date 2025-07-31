@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
@@ -22,10 +21,10 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
-        'role'
+        'role',
     ];
 
-     public function employee(): HasOne
+    public function employee(): HasOne
     {
         return $this->hasOne(Employee::class);
     }
@@ -69,7 +68,7 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
-            'password' => 'hashed',
+            'password'          => 'hashed',
         ];
     }
 
@@ -87,5 +86,9 @@ class User extends Authenticatable
         return $query->select('id', 'name', 'email');
     }
 
+    public function leadCompletions()
+    {
+        return $this->hasMany(LeadCompletion::class);
+    }
 
 }

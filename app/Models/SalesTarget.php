@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class SalesTarget extends Model
 {
     protected $fillable = [
-        'user_id', 'type', 'time_period', 'target', 'achieved', 'start_date', 'end_date'
+        'user_id', 'period', 'start_date', 'end_date','contacted_lead','converted_lead', 'achieved', 'start_date', 'end_date','revenue'
     ];
 
     public function user()

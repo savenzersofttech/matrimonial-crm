@@ -1,9 +1,8 @@
 <?php
-
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 
 class Lead extends Model
 {
@@ -13,7 +12,7 @@ class Lead extends Model
         'profile_id',
         'status',
         'follow_up',
-        'note',   
+        'note',
         'created_by',
     ];
 
@@ -34,4 +33,14 @@ class Lead extends Model
     {
         return $this->hasOne(LeadAssignment::class)->latestOfMany();
     }
+    public function completions()
+    {
+        return $this->hasMany(LeadCompletion::class);
+    }
+
+    public function lastCompletion()
+    {
+        return $this->hasOne(LeadCompletion::class)->latestOfMany();
+    }
+
 }

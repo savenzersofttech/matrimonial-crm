@@ -55,10 +55,10 @@ class WelcomeCallController extends Controller
     }
 
     public function show(WelcomeCall $welcomeCall)
-{
-    $welcomeCall->load('profile', 'followUpHistories.employee'); // Eager load profile and follow-up histories with employee
-    return view('services.welcome-calls.show', compact('welcomeCall'));
-}
+    {
+        $welcomeCall->load('profile', 'followUpHistories.employee'); // Eager load profile and follow-up histories with employee
+        return view('services.welcome-calls.show', compact('welcomeCall'));
+    }
 
     public function edit(WelcomeCall $welcomeCall)
     {
@@ -83,7 +83,7 @@ class WelcomeCallController extends Controller
     'status' => 'required|string',
     'follow_up_date' => 'nullable|date_format:Y-m-d H:i',
     'comment' => 'nullable|string',
-]);
+    ]);
 
     if ($validator->fails()) {
         return ApiResponse::error('Validation failed.', $validator->errors(), 422);

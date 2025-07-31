@@ -6,22 +6,26 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    public function up(): void
+    /**
+     * Run the migrations.
+     */
+    public function up()
     {
-        Schema::create('lead_activities', function (Blueprint $table) {
+        Schema::create('lead_completions', function (Blueprint $table) {
             $table->id();
             $table->foreignId('lead_id')->constrained()->onDelete('cascade');
-            $table->timestamp('follow_up')->nullable();
-            $table->enum('type', ['Call', 'Email', 'Meeting', 'Proposal']);
+            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->timestamp('completed_at')->nullable();
             $table->text('notes')->nullable();
-            $table->string('outcome')->nullable();
-            $table->string('status');
             $table->timestamps();
         });
     }
 
+    /**
+     * Reverse the migrations.
+     */
     public function down(): void
     {
-        Schema::dropIfExists('lead_activities');
+        Schema::dropIfExists('lead_completions');
     }
 };

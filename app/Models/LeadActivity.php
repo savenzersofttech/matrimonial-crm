@@ -17,6 +17,7 @@ class LeadActivity extends Model
         'status',
         'activity_at',
         'created_by',
+        'follow_up',
     ];
 
     protected $casts = [

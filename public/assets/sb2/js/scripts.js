@@ -154,8 +154,24 @@ function getStatusBadge(status) {
             break;
 
         case "hold":
-            badgeClass = "bg-orange"; // Custom
+            badgeClass = "bg-orange";
             break;
+
+        case "call":
+            badgeClass = "bg-primary"; 
+        case "email":
+            badgeClass = "bg-info"; 
+            break;
+        case "proposal":
+            badgeClass = "bg-warning"; 
+            break;
+        case "meeting":
+            badgeClass = "bg-success"; 
+            break;
+        case "paid":
+            badgeClass = "bg-success"; 
+            break;
+
 
         default:
             badgeClass = "bg-dark";

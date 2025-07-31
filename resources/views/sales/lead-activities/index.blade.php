@@ -58,53 +58,278 @@
         <div class="card mb-4">
             <div class="card-header">Table</div>
             <div class="card-body">
-                <table id="simpleDatatable">
+                  <table id="datatablesSimple" class="table table-bordered table-striped text-center">
                     <thead>
                         <tr>
-                            <th>Name</th>
-                            <th>Date</th>
+                            <th>S No</th>
+                            <th>Lead Name</th>
+                            <th>Follow Up</th>
                             <th>Type</th>
                             <th>Notes</th>
                             <th>Outcome</th>
-                           
+                            <th>Status</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
-                    <tfoot>
-                        <tr>
-                           <th>Name</th>
-                            <th>Date</th>
-                            <th>Type</th>
-                            <th>Notes</th>
-                            <th>Outcome</th>
-                            <th>Actions</th>
-                        </tr>
-                    </tfoot>
-                    <tbody>
-                    @foreach ($leadActivitys as $activity)
-                        <tr>
-                            <td>{{ $activity->lead->profile->name ?? 'N/A' }}</td>
-                                                        <td>{{ $activity->created_at->format('d/m/Y h:i A') }}
-</td>
-                            <td>{{ $activity->type }}</td>
-                            <td>{{ $activity->notes }}</td>
-                            <td>{{ $activity->outcome ?? 'N/A' }}</td>
-                            
-                            <td>
-                                <button class="btn btn-datatable btn-icon btn-transparent-dark me-2">
-                                    <i class="fa-solid fa-ellipsis-vertical"></i>
-                                </button>
-                                <button class="btn btn-datatable btn-icon btn-transparent-dark">
-                                    <i class="fa-regular fa-trash-can"></i>
-                                </button>
-                            </td>
-                        </tr>
-                    @endforeach
-                    </tbody>
-
                 </table>
             </div>
         </div>
     </div>
+
+    <div class="modal fade" id="FormModalgx" tabindex="-1" aria-labelledby="FormModalgxLabel"  data-bs-backdrop="static" aria-hidden="true">
+            <div class="modal-dialog">
+                <form  id="regForm" callbackSuccessFn="closeModal"
+                    method="POST">
+                    @csrf
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="FormModalgxLabel">Title</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+
+                        <div class="row modal-body">
+
+                            <div class="mb-3">
+                                <label for="profile_id" class="form-label">Name</label>
+                                <input id="name" type="text"  
+                                    class="form-control" readonly>
+                            </div>
+
+
+                            <div class="col-md-6 mb-3">
+                                <label for="type" class="form-label required">Activity</label>
+                                <select id="type" class="form-select after-parent " name="type"
+                                    placeholder="Select Activity" required>
+                                    <option value="" disabled selected hidden>Select Activity</option>
+                                    <option value="Call">Call</option>
+                                    <option value="Email">Email</option>
+                                    <option value="Meeting">Meeting</option>
+                                    <option value="Proposal">Proposal</option>                                  
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="outcome" class="form-label required">Outcome</label>
+                                <select id="outcome" name="outcome" class="form-select after-parent" required>
+                                <option value="" disabled selected hidden>Select Outcome</option>
+
+                                    <option value="Interested">Interested</option>
+                                    <option value="Follow-up Needed">Follow-up Needed</option>
+                                    <option value="Not Interested">Not Interested</option>
+                                </select>
+                            </div>
+
+                            
+                                <div class="col-md-6 mb-3">
+                                    <label for="follow_up" class="form-label">Follow-up Date/Time</label>
+                                    <input type="datetime-local" class="form-control" id="follow_up" name="follow_up">
+                                </div>
+
+                           <div class="col-md-6 mb-3">
+                                <label for="status" class="form-label required">Status</label>
+                                <select id="status" name="status" class="form-select after-parent" required>
+                                    <option value="" disabled selected hidden>Select Status</option>
+
+                                    @foreach(leadsOption() as $option)
+                                    <option value="{{ $option }}">{{ $option }}</option>
+
+                                    @endforeach
+                                </select>
+                            </div>
+
+
+                            <div class="mb-3">
+                                <label for="notes" class="form-label">Note/Comment</label>
+                                <textarea id="textarea" type="text" name="notes" id="notes"
+                                    class="num  after-parent form-control"></textarea>
+                            </div>
+
+                        </div>
+
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary me-auto" data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-success">Save</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+
 </main>
 @endsection
+
+
+
+@push('scripts')
+    <script>
+        let configration;
+        const updateUrl = @json(route('sales.sales.update', ['sale' => '__ID__']));
+        document.addEventListener("DOMContentLoaded", function() {
+            validationConfig['ignore'] = [];
+
+            let colDefs = [{
+                    targets: 0,
+                    className: 'text-center',
+                    orderable: false,
+                    searchable: false,
+                    width: '50px', // <-- minimum width
+                    render: function(e, t, a, s) {
+                        return a.s_no;
+                    }
+                },
+                {
+                    targets: -1,
+                    title: "Actions",
+                    orderable: !1,
+                    searchable: !1,
+                    render: function(e, t, a, s) {
+                        console.log(e, t, a, s);
+                          tableData[a.id] = a; // Fix: Use a.id as the key directly
+                        return `
+                       <button 
+                            type="button"
+                            data-id="index_${a.id}" 
+                            onclick="openEditModal(${a.id}, this, event)" 
+                            class="btn btn-datatable btn-icon btn-transparent-dark me-2"
+                            aria-label="Edit User"
+                            title="Edit">    <i class="fas fa-pen"></i>
+
+                        </button>
+                        <button 
+                            type="button"
+                            data-href = "{{ route('sales.sales.destroy', ':id') }}"
+                            data-id="${a.id}" 
+                            onclick="deleteConfirmation(this, event)"  
+                            class="btn btn-datatable btn-icon btn-transparent-dark"
+                            aria-label="Delete User"
+                            title="Delete"><i class="far fa-trash-can"></i>
+                        </button>
+                        `;
+                    },
+                },
+            ];
+
+
+
+            configration = {
+                processing: true,
+                serverSide: true,
+                ajax: {
+                    url: "{{ route('sales.leadactivity.showAll.api') }}",
+                    type: 'POST'
+                },
+                columns: [{
+                        data: 's_no',
+                    },
+                    {
+                        data: 'lead.profile.name',
+                    },
+                    {
+                        data: 'follow_up',
+                    },
+                    {
+                        data: 'type',
+                        orderable: false,
+                        searchable: false,
+                        render: function(data, type, row) {
+                            return getStatusBadge(data);
+                        }
+                    },
+                    {
+                       data: 'notes'
+
+                    },
+                     {
+                       data: 'outcome'
+
+                    },
+                     {
+                        data: 'status',
+                        orderable: false,
+                        searchable: false,
+                        render: function(data, type, row) {
+                            return getStatusBadge(data);
+                        }
+                    }, {
+                       data: 'outcome'
+
+                    }
+                   
+                ],
+                columnDefs: colDefs || [],
+            };
+
+
+           
+
+             $('#plan').on('change', function() {
+                const selectedOption = $(this).find('option:selected');
+                const price = selectedOption.data('price') || 0;
+                $('#price').val(price);
+            });
+
+
+            $(regForm).validate(validationConfig);
+
+           
+
+
+        });
+
+      
+
+        function openEditModal(id, element, event) {
+            event.preventDefault();
+            const rowData = tableData[id]; 
+            console.log(rowData);
+            if (!rowData) return;
+
+            var $form = $('#regForm');
+            $form[0].reset();
+
+            $form.attr('action', updateUrl.replace('__ID__', rowData.id));
+            $form.attr('method', 'POST');
+            $('#FormModalgxLabel').text('Update Lead');
+            $form.find('button[type="submit"]').text('Update');
+
+            let $methodInput = $form.find('input[name="_method"]');
+            if (!$methodInput.length) {
+                $methodInput = $('<input>', {
+                    type: 'hidden',
+                    name: '_method'
+                });
+                $form.append($methodInput);
+            }
+            $methodInput.val('PUT');
+            $('#name').val(rowData.lead.profile.name);
+
+            $form.find('[name]:not([name=_token])').each(function() {
+                const $el = $(this);
+                const name = this.name;
+
+                if (rowData[name] ?? false) {
+                    let value = rowData[name];
+
+                    // For phone numbers, remove only the leading '+'
+                    if (name === 'phone_number' || name === 'alternative_phone_number') {
+                        value = value.replace(/^\+/, '').trim();
+                    }
+
+                    if ($el.hasClass('virtualSelect')) {
+                        // Handle multi-select values
+                        if (typeof value === 'string' && value.includes(',')) {
+                            value = value.split(',').map(item => item.trim());
+                        }
+                        $(`[name="${name}"]`)[0].setValue(value);
+                    } else {
+                        this.value = value;
+                    }
+                }
+            });
+
+            
+
+            new bootstrap.Modal($('#FormModalgx')[0]).show();
+        }
+    </script>
+@endpush
