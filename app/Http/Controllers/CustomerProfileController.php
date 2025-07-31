@@ -59,21 +59,23 @@ class CustomerProfileController extends Controller
 
     public function show($profileId): View
     {
-        $profile       = Profile::with(['partnerPreference'])->findOrFail($profileId);
+        $profile = Profile::with(['partnerPreference','religionData', 'casteData'])->findOrFail($profileId);
         $tounges       = MotherTongue::all();
         $ProfileSource = ProfileSource::all();
         $religion      = Religion::all();
         $gotras        = Gothra::all();
+        
+        // $religion = Profile::join('religions', 'profiles.religion', '=', 'religions.id')
+        //           ->select('profiles.*', 'religions.name as religion_name')
+        //           ->where('religions.id', $religion)
+        //           ->get();
+
 
         return view('profiles.view', compact('profile', 'ProfileSource', 'tounges', 'religion', 'gotras'));
     }
 
     public function showAll(Request $request)
     {
-        
-       
-    
-
         $dbColumns = (new Profile)->getFillable();
         // dd($dbColumns);
         $order     = $request->post('order');
@@ -187,7 +189,7 @@ class CustomerProfileController extends Controller
                 ? $request->alternative_phone_code . preg_replace('/\s+/', '', $request->alternative_phone_number)
                 : null,
         ]);
-    
+
         /** -----------------------------------
          * 2. Handle partner preferences (array fields)
          * ----------------------------------- */
@@ -238,11 +240,16 @@ class CustomerProfileController extends Controller
             'profile_source_id' => 'exists:profile_sources,id',
             'profile_source_comment' => 'nullable|string',
             'name' => 'required|string|max:255',
-            'gender' => 'required|in:Male,Female',
+            'gender' => 'in:Male,Female',
             'email' => ['nullable', 'email', Rule::unique('profiles', 'email')],
             'alternative_email' => ['nullable', 'email', Rule::unique('profiles', 'alternative_email')],
             'phone_number' => ['required', 'string', 'regex:/^\+\d{10,15}$/', Rule::unique('profiles', 'phone_number')],
-            'alternative_phone_number' => ['nullable', 'string', 'regex:/^\+\d{10,15}$/', Rule::unique('profiles', 'alternative_phone_number')],
+            'alternative_phone_number' => [
+                'nullable', 
+                'string', 
+                'regex:/^\+\d{10,15}$/', 
+                Rule::unique('profiles', 'alternative_phone_number')
+            ],
             // 'govt_id_status' => 'nullable|string|in:verified,non_verified',
             'govt_id_status' => 'nullable|in:1,0',
             'government_id' => 'nullable|array|max:5',
@@ -264,7 +271,7 @@ class CustomerProfileController extends Controller
             'country' => 'nullable|string',
             'state' => 'nullable|string',
             'city' => 'nullable|string',
-            'bio' => 'nullable|string|min:200',
+            'bio' => 'nullable|string|min:100',
             'religion' => 'nullable|string',
             'caste' => 'nullable|string',
             'sub_caste' => 'nullable|string',
@@ -290,7 +297,7 @@ class CustomerProfileController extends Controller
             'family_type' => 'nullable|string',
             'family_affluence' => 'nullable|string',
             'family_values' => 'nullable|string',
-            'family_bio' => 'nullable|string|min:200',
+            'family_bio' => 'nullable|string|min:100',
             'password' => 'nullable|string|min:8|confirmed',
     
             // Partner validations
@@ -379,6 +386,7 @@ class CustomerProfileController extends Controller
     
         $profileData['created_at'] = now('Asia/Kolkata');
         $profileData['updated_at'] = now('Asia/Kolkata');
+        $profileData['date'] = now('Asia/Kolkata')->toDateString(); // proper date format
         $profileData['profile_id'] = $this->generateProfileId($profileData['name'], $profileData['phone_number']);
     
         /** -----------------------------------

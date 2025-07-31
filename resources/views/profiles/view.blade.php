@@ -8,9 +8,9 @@
             <div class="page-header-content pt-4">
                 <div class="row align-items-center justify-content-between">
                     <div class="col-auto mt-4">
-                        <h1 class="page-header-title text-white">
-                            <div class="page-header-icon"><i data-feather="user"></i></div>
-                            My Profile
+                        <h1 class="page-header-title">
+                            <div class="page-header-icon"><i data-feather="activity"></i></div>
+                            Profile Details
                         </h1>
                     </div>
                 </div>
@@ -19,423 +19,522 @@
     </header>
 
     <!-- Main page content -->
-    <div class="container-fluid px-4 mt-4">
+    <div class="container-fluid px-4 mt-n10">
         <div class="row row-cols-1 g-4">
             <!-- Personal Details Card -->
             <div class="col">
                 <div class="card shadow-sm">
-                    <div class="card-header bg-primary text-white">
-                        <h5 class="mb-0">Personal Details</h5>
-                    </div>
+                    <!--<div class="card-header bg-primary text-white">-->
+                    <!--    <h5 class="mb-0 text-white">Personal Details</h5>-->
+                    <!--</div>-->
                     <div class="card-body">
-                        <div class="row row-cols-1 row-cols-md-2 g-3">
-                            <div class="col">
-                                <p><strong>Profile Source:</strong> <span class="text-muted">{{ $ProfileSource->firstWhere('id', $profile->profile_source_id)->name ?? '-' }}</span></p>
-                            </div>
-                            <div class="col">
-                                <p><strong>Profile Source Info:</strong> <span class="text-muted">{{ $profile->profile_source_comment ?? '-' }}</span></p>
+                        <!--<div class="row row-cols-1 row-cols-md-2 g-3">-->
+                        <!--</div>-->
+
+                        <!--Profile Information-->
+                        <div class="">
+                            <p>Profile Source: <span class="text-muted">{{
+                                    $ProfileSource->firstWhere('id', $profile->profile_source_id)->name ?? '-' }}</span>
+                            </p>
+                        </div>
+                        <div class="">
+                            <p>Profile Source Info: <span class="text-muted">{{
+                                    $profile->profile_source_comment ?? '-' }}</span></p>
+                        </div>
+                        <div class="">
+                            <p>Profile ID: <span class="text-muted">{{
+                                    $profile->profile_id ?? '-' }}</span></p>
+                        </div>
+                        
+                        <div class="row mt-2">
+                        <div class="col-6">
+                            <div class="d-flex flex-wrap gap-2">
+                    
+                                @php
+                                    $photos = json_decode($profile->photo, true);
+                                    $firstPhoto = !empty($photos) && is_array($photos) ? $photos[0] : null;
+                                @endphp
+                    
+                                @if ($firstPhoto)
+                                    <div class="border p-1 rounded" style="width: 200px">
+                                        <img src="{{ asset('storage/' . $firstPhoto) }}" class="img-fluid" alt="Photo">
+                                    </div>
+                                @else
+                                    <div class="avatar">
+                                        <img class="avatar-img img-fluid"
+                                            src="{{ asset('assets/sb2/assets/img/illustrations/profiles/profile-1.png') }}"
+                                            alt="No Photo">
+                                    </div>
+                                @endif
                             </div>
                         </div>
                     </div>
-                </div>
-            </div>
-
-            <!-- Contact Information Card -->
-            <div class="col">
-                <div class="card shadow-sm">
-                    <div class="card-header bg-primary text-white">
-                        <h5 class="mb-0">Contact Information</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row row-cols-1 row-cols-md-2 g-3">
+                        <!--Contact Information-->
+                        <h5 class="mt-4">Contact Information</h5>
+                        <div class="row row-cols-1 row-cols-md-2">
                             <div class="col">
-                                <p><strong>Email:</strong> <span class="text-muted">{{ $profile->email ?? '-' }}</span></p>
+                                <p>Email: <span class="text-muted">{{ $profile->email ?? '-' }}</span>
+                                </p>
                             </div>
                             <div class="col">
-                                <p><strong>Alternative Email:</strong> <span class="text-muted">{{ $profile->alternative_email ?? '-' }}</span></p>
+                                <p>Alternative Email: <span class="text-muted">{{
+                                        $profile->alternative_email ?? '-' }}</span></p>
                             </div>
                             <div class="col">
-                                <p><strong>Phone Number:</strong> <span class="text-muted">{{ $profile->phone_number ? $profile->phone_code . ' ' . substr($profile->phone_number, strlen($profile->phone_code)) : '-' }}</span></p>
+                                <p>Phone Number: <span class="text-muted">{{ $profile->phone_number ?
+                                        $profile->phone_code . ' ' . substr($profile->phone_number,
+                                        strlen($profile->phone_code)) : '-' }}</span></p>
                             </div>
                             <div class="col">
-                                <p><strong>Alternative Phone Number:</strong> <span class="text-muted">{{ $profile->alternative_phone_number ? $profile->alternative_phone_code . ' ' . substr($profile->alternative_phone_number, strlen($profile->alternative_phone_code)) : '-' }}</span></p>
+                                <p>Alternative Phone Number: <span class="text-muted">{{
+                                        $profile->alternative_phone_number ? $profile->alternative_phone_code . ' ' .
+                                        substr($profile->alternative_phone_number,
+                                        strlen($profile->alternative_phone_code)) : '-' }}</span></p>
                             </div>
                             <div class="col">
-                                <p><strong>Contact Person:</strong> <span class="text-muted">{{ $profile->contact_person_name ?? '-' }}</span></p>
+                                <p>Contact Person: <span class="text-muted">{{
+                                        $profile->contact_person_name ?? '-' }}</span></p>
                             </div>
                             <div class="col">
-                                <p><strong>Profile Creating For:</strong> <span class="text-muted">{{ $profile->profile_for ?? '-' }}</span></p>
+                                <p>Profile Creating For: <span class="text-muted">{{
+                                        $profile->profile_for ?? '-' }}</span></p>
                             </div>
                         </div>
-                    </div>
-                </div>
-            </div>
 
-            <!-- Client’s Basic Information Card -->
-            <div class="col">
-                <div class="card shadow-sm">
-                    <div class="card-header bg-primary text-white">
-                        <h5 class="mb-0">Client’s Basic Information</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row row-cols-1 row-cols-md-2 g-3">
+                        <h5 class="g-2">Client’s Basic Information</h5>
+                        <div class="row row-cols-1 row-cols-md-2">
                             <div class="col">
-                                <p><strong>Full Name:</strong> <span class="text-muted">{{ $profile->name ?? '-' }}</span></p>
+                                <p>Full Name: <span class="text-muted">{{ $profile->name ?? '-'
+                                        }}</span></p>
                             </div>
                             <div class="col">
-                                <p><strong>Gender:</strong> <span class="badge bg-success text-white">{{ $profile->gender ?? '-' }}</span></p>
+                                <p>Gender: <span class="badge bg-success text-white">{{
+                                        $profile->gender ?? '-' }}</span></p>
                             </div>
                             <div class="col">
-                                <p><strong>Date of Birth:</strong> <span class="text-muted">{{ $profile->date_of_birth ? \Carbon\Carbon::parse($profile->date_of_birth)->format('d M Y') : '-' }}</span></p>
+                                <p>Date of Birth: <span class="text-muted">{{ $profile->date_of_birth ?
+                                        \Carbon\Carbon::parse($profile->date_of_birth)->format('d M Y') : '-' }}</span>
+                                </p>
                             </div>
                             <div class="col">
-                                <p><strong>Marital Status:</strong> <span class="text-muted">{{ $profile->marital_status ?? '-' }}</span></p>
+                                <p>Marital Status: <span class="text-muted">{{ $profile->marital_status
+                                        ?? '-' }}</span></p>
                             </div>
                             <div class="col">
-                                <p><strong>Height:</strong> <span class="text-muted">{{ $profile->height ?? '-' }}</span></p>
+                                <p>Height: <span class="text-muted">{{ $profile->height ?? '-'
+                                        }}</span></p>
                             </div>
                             <div class="col">
-                                <p><strong>Mother Tongue:</strong> <span class="text-muted">{{ $profile->mother_tongue ? (is_array($mt = json_decode($profile->mother_tongue, true)) ? implode(', ', $mt) : $profile->mother_tongue) : '-' }}</span></p>
+                                <p>Mother Tongue: <span class="text-muted">{{ $profile->mother_tongue ?
+                                        (is_array($mt = json_decode($profile->mother_tongue, true)) ? implode(', ', $mt)
+                                        : $profile->mother_tongue) : '-' }}</span></p>
                             </div>
                             <div class="col">
-                                <p><strong>Weight:</strong> <span class="text-muted">{{ $profile->weight ?? '-' }}</span></p>
+                                <p>Weight: <span class="text-muted">{{ $profile->weight ?? '-'
+                                        }}</span></p>
                             </div>
                             <div class="col">
-                                <p><strong>Body Type:</strong> <span class="text-muted">{{ $profile->body_type ?? '-' }}</span></p>
+                                <p>Body Type: <span class="text-muted">{{ $profile->body_type ?? '-'
+                                        }}</span></p>
                             </div>
                             <div class="col">
-                                <p><strong>Complexion:</strong> <span class="text-muted">{{ $profile->complexion ?? '-' }}</span></p>
+                                <p>Complexion: <span class="text-muted">{{ $profile->complexion ?? '-'
+                                        }}</span></p>
                             </div>
                             <div class="col">
-                                <p><strong>Blood Group:</strong> <span class="text-muted">{{ $profile->blood_group ?? '-' }}</span></p>
+                                <p>Blood Group: <span class="text-muted">{{ $profile->blood_group ??
+                                        '-' }}</span></p>
                             </div>
                             <div class="col">
-                                <p><strong>Health Status:</strong> <span class="text-muted">{{ $profile->health_status ?? '-' }}</span></p>
+                                <p>Health Status: <span class="text-muted">{{ $profile->health_status
+                                        ?? '-' }}</span></p>
                             </div>
                             <div class="col">
-                                <p><strong>Native Place:</strong> <span class="text-muted">{{ $profile->native_place ?? '-' }}</span></p>
+                                <p>Native Place: <span class="text-muted">{{ $profile->native_place ??
+                                        '-' }}</span></p>
                             </div>
                             <div class="col">
-                                <p><strong>Country:</strong> <span class="text-muted">{{ $profile->country ?? '-' }}</span></p>
+                                <p>Country: <span class="text-muted">{{ $profile->country ?? '-'
+                                        }}</span></p>
                             </div>
                             <div class="col">
-                                <p><strong>State:</strong> <span class="text-muted">{{ $profile->state ?? '-' }}</span></p>
+                                <p>State: <span class="text-muted">{{ $profile->state ?? '-' }}</span>
+                                </p>
                             </div>
                             <div class="col">
-                                <p><strong>City:</strong> <span class="text-muted">{{ $profile->city ?? '-' }}</span></p>
+                                <p>City: <span class="text-muted">{{ $profile->city ?? '-' }}</span>
+                                </p>
                             </div>
                             <div class="col">
-                                <p><strong>Citizenship:</strong> <span class="text-muted">{{ $profile->citizenship ? (is_array($cit = json_decode($profile->citizenship, true)) ? implode(', ', $cit) : $profile->citizenship) : '-' }}</span></p>
+                                <p>Citizenship: <span class="text-muted">{{ $profile->citizenship ?
+                                        (is_array($cit = json_decode($profile->citizenship, true)) ? implode(', ', $cit)
+                                        : $profile->citizenship) : '-' }}</span></p>
                             </div>
                             <div class="col">
-                                <p><strong>Country Grew Up:</strong> <span class="text-muted">{{ $profile->grow_up_in ? (is_array($gui = json_decode($profile->grow_up_in, true)) ? implode(', ', $gui) : $profile->grow_up_in) : '-' }}</span></p>
+                                <p>Country Grew Up: <span class="text-muted">{{ $profile->grow_up_in ?
+                                        (is_array($gui = json_decode($profile->grow_up_in, true)) ? implode(', ', $gui)
+                                        : $profile->grow_up_in) : '-' }}</span></p>
                             </div>
-                            <div class="col">
-                                <p><strong>Government ID:</strong></p>
+                        </div>
+
+                        <div class="row">
+                            <!-- Column 1: Government ID -->
+                            <div class="col-6">
+                                <p>Government ID:</p>
                                 <div class="d-flex flex-wrap gap-2">
                                     @php
-                                        $govtIds = $profile->government_id ? json_decode($profile->government_id, true) : [];
+                                    $govtIds = $profile->government_id ? json_decode($profile->government_id, true) :
+                                    [];
                                     @endphp
                                     @if (!empty($govtIds))
-                                        @foreach ($govtIds as $id)
-                                            @if (preg_match('/\.(jpg|jpeg|png)$/i', $id))
-                                                <div class="avatar">
-                                                    <img class="avatar-img img-fluid" src="/storage/{{ $id }}" alt="Government ID">
-                                                </div>
-                                            @else
-                                                <div class="preview-container">
-                                                    <div style="text-align: center; font-size: 12px;">{{ basename($id) }}</div>
-                                                </div>
-                                            @endif
-                                        @endforeach
+                                    @foreach ($govtIds as $id)
+                                    @if (preg_match('/\.(jpg|jpeg|png)$/i', $id))
+                                    <div class="avatar">
+                                        <img class="avatar-img img-fluid" src="/storage/{{ $id }}" alt="Government ID">
+                                    </div>
                                     @else
-                                        <span class="text-muted">-</span>
+                                    <div class="preview-container">
+                                        <div style="text-align: center; font-size: 12px;">{{ basename($id) }}</div>
+                                    </div>
+                                    @endif
+                                    @endforeach
+                                    @else
+                                    <span class="text-muted">-</span>
                                     @endif
                                 </div>
-                                <p class="mt-2"><strong>Government ID Status:</strong> <span class="badge {{ $profile->govt_id_status ? 'bg-success' : 'bg-warning' }} text-white">{{ $profile->govt_id_status ? 'Verified' : 'Non-Verified' }}</span></p>
+                            </div>
+
+                            <!-- Column 2: Government ID Status -->
+                            <div class="col-6">
+                                <p class="mt-2">Government ID Status:
+                                    <span
+                                        class="badge {{ $profile->govt_id_status ? 'bg-success' : 'bg-warning' }} text-white">
+                                        {{ $profile->govt_id_status ? 'Verified' : 'Non-Verified' }}
+                                    </span>
+                                </p>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <p>About Yourself: <span class="text-muted">{{ $profile->bio ?? '-'
+                                    }}</span></p>
+                        </div>
+
+
+                        <!--Religion Information-->
+                        <h5 class="g-2">Religion Information</h5>
+                        <div class="row row-cols-1 row-cols-md-2">
+                            <div class="col">
+                                <p>Religion: <span class="text-muted">{{ $profile->religionData->name  ?? '-'
+                                        }}</span></p>
                             </div>
                             <div class="col">
-                                <p><strong>Photo:</strong></p>
-                                <div class="d-flex flex-wrap gap-2">
-                                    @php
-                                        $photos = $profile->photo ? json_decode($profile->photo, true) : [];
-                                    @endphp
-                                    @if (!empty($photos))
-                                        @foreach ($photos as $photo)
-                                            <div class="avatar">
-                                                <img class="avatar-img img-fluid" src="/storage/{{ $photo }}" alt="Profile Photo">
+                                <p>Caste: <span class="text-muted">{{ $profile->casteData->name ?? '-' }}</span></p>
+                            </div>
+                            <div class="col">
+                                <p>Sub Caste: <span class="text-muted">{{ $profile->sub_caste ?? '-'
+                                        }}</span></p>
+                            </div>
+                            <div class="col">
+                                <p>Gotra: <span class="text-muted">{{ $profile->gotra ?? '-' }}</span></p>
+                            </div>
+                        </div>
+
+                        <!--Horoscope Information-->
+                        <h5>Horoscope Information</h5>
+                        <div class="row row-cols-1 row-cols-md-2">
+                            <div class="col">
+                                <p>Time of Birth: <span class="text-muted">{{ $profile->birth_time ?? '-'
+                                        }}</span></p>
+                            </div>
+                            <div class="col">
+                                <p>Place of Birth: <span class="text-muted">{{ $profile->birth_place ?? '-'
+                                        }}</span></p>
+                            </div>
+                            <div class="col">
+                                <p>Manglik Status: <span class="text-muted">{{ $profile->manglik_status ??
+                                        '-' }}</span></p>
+                            </div>
+                        </div>
+
+                        <!--Education and Career Information-->
+                        <h5>Education and Career Information</h5>
+                        <div class="row row-cols-1 row-cols-md-2">
+                            <div class="col">
+                                <p>Highest Qualification: <span class="text-muted">{{
+                                        $profile->highest_qualification ? (is_array($hq =
+                                        json_decode($profile->highest_qualification, true)) ? implode(', ', $hq) :
+                                        $profile->highest_qualification) : '-' }}</span></p>
+                            </div>
+                            <div class="col">
+                                <p>Education Field: <span class="text-muted">{{ $profile->education_field ?
+                                        (is_array($ef = json_decode($profile->education_field, true)) ? implode(', ', $ef) :
+                                        $profile->education_field) : '-' }}</span></p>
+                            </div>
+                            <div class="col">
+                                <p>Name of Institute: <span class="text-muted">{{ $profile->institute_name
+                                        ?? '-' }}</span></p>
+                            </div>
+                            <div class="col">
+                                <p>Work Location: <span class="text-muted">{{ $profile->work_location ??
+                                        '-' }}</span></p>
+                            </div>
+                            <div class="col">
+                                <p>Working With: <span class="text-muted">{{ $profile->employer_name ?? '-'
+                                        }}</span></p>
+                            </div>
+                            <div class="col">
+                                <p>Profession: <span class="text-muted">{{ $profile->profession ?
+                                        (is_array($prof = json_decode($profile->profession, true)) ? implode(', ', $prof) :
+                                        $profile->profession) : '-' }}</span></p>
+                            </div>
+                            <div class="col">
+                                <p>Business/Company Name: <span class="text-muted">{{
+                                        $profile->business_name ?? '-' }}</span></p>
+                            </div>
+                            <div class="col">
+                                <p>Designation: <span class="text-muted">{{ $profile->designation ?? '-'
+                                        }}</span></p>
+                            </div>
+                            <div class="col">
+                                <p>Income Range: <span class="text-muted">{{ $profile->annual_income ?? '-'
+                                        }}</span></p>
+                            </div>
+                        </div>
+
+                        <!--Lifestyle Information-->
+                        <h5>Lifestyle Information</h5>
+                        <div class="row row-cols-1 row-cols-md-2">
+                            <div class="col">
+                                <p>Diet: <span class="text-muted">{{ $profile->diet ? (is_array($diet =
+                                        json_decode($profile->diet, true)) ? implode(', ', $diet) : $profile->diet) : '-'
+                                        }}</span></p>
+                            </div>
+                            <div class="col">
+                                <p>Drinking: <span class="text-muted">{{ $profile->drinking_status ?? '-'
+                                        }}</span></p>
+                            </div>
+                            <div class="col">
+                                <p>Smoking: <span class="text-muted">{{ $profile->smoking_status ?? '-'
+                                        }}</span></p>
+                            </div>
+                        </div>
+
+                        <!--Family Information-->
+                        <div class="row row-cols-1 row-cols-md-2">
+                            <div class="col">
+                                <p>Father's Occupation: <span class="text-muted">{{
+                                        $profile->father_occupation ?? '-' }}</span></p>
+                            </div>
+                            <div class="col">
+                                <p>Mother's Occupation: <span class="text-muted">{{
+                                        $profile->mother_occupation ?? '-' }}</span></p>
+                            </div>
+                            <div class="col">
+                                <p>Number of Brothers: <span class="text-muted">{{ $profile->brother_count
+                                        ?? '-' }}</span></p>
+                            </div>
+                            <div class="col">
+                                <p>Married Brothers: <span class="text-muted">{{
+                                        $profile->married_brother_count ?? '-' }}</span></p>
+                            </div>
+                            <div class="col">
+                                <p>Number of Sisters: <span class="text-muted">{{ $profile->sister_count ??
+                                        '-' }}</span></p>
+                            </div>
+                            <div class="col">
+                                <p>Married Sisters: <span class="text-muted">{{
+                                        $profile->married_sister_count ?? '-' }}</span></p>
+                            </div>
+                            <div class="col">
+                                <p>Family Type: <span class="text-muted">{{ $profile->family_type ?? '-'
+                                        }}</span></p>
+                            </div>
+                            <div class="col">
+                                <p>Family Affluence: <span class="text-muted">{{ $profile->family_affluence
+                                        ?? '-' }}</span></p>
+                            </div>
+                            <div class="col">
+                                <p>Family Values: <span class="text-muted">{{ $profile->family_values ??
+                                        '-' }}</span></p>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <p>About Your Family: <span class="text-muted">{{ $profile->family_bio ??
+                                    '-' }}</span></p>
+                        </div>
+
+                        <!-- Basic Preferences -->
+                        <h3>Partner's Preferences</h5>
+                        <h5 class="">Basic Preferences</h5>
+                        <div class="row row-cols-1 row-cols-md-2">
+                            <div class="col">
+                                <p>Minimum Age: <span class="text-muted">{{
+                                        $profile->partnerPreference->min_age ?? '-' }}</span></p>
+                            </div>
+                            <div class="col">
+                                <p>Maximum Age: <span class="text-muted">{{
+                                        $profile->partnerPreference->max_age ?? '-' }}</span></p>
+                            </div>
+                            <div class="col">
+                                <p>Minimum Height: <span class="text-muted">{{
+                                        $profile->partnerPreference->min_height ?? '-' }}</span></p>
+                            </div>
+                            <div class="col">
+                                <p>Maximum Height: <span class="text-muted">{{
+                                        $profile->partnerPreference->max_height ?? '-' }}</span></p>
+                            </div>
+                            <div class="col">
+                                <p>Marital Status: <span class="text-muted">{{
+                                        $profile->partnerPreference->marital_status ? (is_array($ms =
+                                        json_decode($profile->partnerPreference->marital_status, true)) ? implode(', ', $ms)
+                                        : $profile->partnerPreference->marital_status) : '-' }}</span></p>
+                            </div>
+                            <div class="col">
+                                <p>Religion: <span class="text-muted">{{
+                                        $profile->partnerPreference->partner_religion ? (is_array($pr =
+                                        json_decode($profile->partnerPreference->partner_religion, true)) ? implode(', ',
+                                        $pr) : $profile->partnerPreference->partner_religion) : '-' }}</span></p>
+                            </div>
+                            <div class="col">
+                                <p>Caste: <span class="text-muted">{{
+                                        $profile->partnerPreference->partner_caste ? (is_array($pc =
+                                        json_decode($profile->partnerPreference->partner_caste, true)) ? implode(', ', $pc)
+                                        : $profile->partnerPreference->partner_caste) : '-' }}</span></p>
+                            </div>
+                            <div class="col">
+                                <p>Manglik Status: <span class="text-muted">{{
+                                        $profile->partnerPreference->manglik_status ? (is_array($ms =
+                                        json_decode($profile->partnerPreference->manglik_status, true)) ? implode(', ', $ms)
+                                        : $profile->partnerPreference->manglik_status) : '-' }}</span></p>
+                            </div>
+                        </div>
+
+                        <!-- Location Preferences -->
+                        <h5 class="">Location Preferences</h5>
+                        <div class="row row-cols-1 row-cols-md-2">
+                            <div class="col">
+                                <p>Country: <span class="text-muted">{{
+                                        $profile->partnerPreference->country ? (is_array($pc =
+                                        json_decode($profile->partnerPreference->country, true)) ? implode(', ', $pc) :
+                                        $profile->partnerPreference->country) : '-' }}</span></p>
+                            </div>
+                            <div class="col">
+                                <p>State: <span class="text-muted">{{ $profile->partnerPreference->state ?
+                                        (is_array($ps = json_decode($profile->partnerPreference->state, true)) ? implode(',
+                                        ', $ps) : $profile->partnerPreference->state) : '-' }}</span></p>
+                            </div>
+                            <div class="col">
+                                <p>City: <span class="text-muted">{{ $profile->partnerPreference->city ?
+                                        (is_array($pcity = json_decode($profile->partnerPreference->city, true)) ?
+                                        implode(', ', $pcity) : $profile->partnerPreference->city) : '-' }}</span></p>
+                            </div>
+                            <div class="col">
+                                <p>Citizenship: <span class="text-muted">{{
+                                        $profile->partnerPreference->citizenship ?? '-' }}</span></p>
+                            </div>
+                            <div class="col">
+                                <p>Country Grew Up: <span class="text-muted">{{
+                                        $profile->partnerPreference->grow_up_in ? (is_array($pgui =
+                                        json_decode($profile->partnerPreference->grow_up_in, true)) ? implode(', ', $pgui) :
+                                        $profile->partnerPreference->grow_up_in) : '-' }}</span></p>
+                            </div>
+                        </div>
+
+                        <!-- Education & Career Preferences -->
+                        <h5 class="">Education & Career Preferences</h5>
+                        <div class="row row-cols-1 row-cols-md-2">
+                            <div class="col">
+                                <p>Highest Qualification: <span class="text-muted">{{
+                                        $profile->partnerPreference->highest_qualification ? (is_array($phq =
+                                        json_decode($profile->partnerPreference->highest_qualification, true)) ? implode(',
+                                        ', $phq) : $profile->partnerPreference->highest_qualification) : '-' }}</span></p>
+                            </div>
+                            <div class="col">
+                                <p>Education Field: <span class="text-muted">{{
+                                        $profile->partnerPreference->education_field ? (is_array($pef =
+                                        json_decode($profile->partnerPreference->education_field, true)) ? implode(', ',
+                                        $pef) : $profile->partnerPreference->education_field) : '-' }}</span></p>
+                            </div>
+                            <div class="col">
+                                <p>Working With: <span class="text-muted">{{
+                                        $profile->partnerPreference->employer_name ? (is_array($pen =
+                                        json_decode($profile->partnerPreference->employer_name, true)) ? implode(', ', $pen)
+                                        : $profile->partnerPreference->employer_name) : '-' }}</span></p>
+                            </div>
+                            <div class="col">
+                                <p>Profession: <span class="text-muted">{{
+                                        $profile->partnerPreference->profession ? (is_array($pprof =
+                                        json_decode($profile->partnerPreference->profession, true)) ? implode(', ', $pprof)
+                                        : $profile->partnerPreference->profession) : '-' }}</span></p>
+                            </div>
+                            <div class="col">
+                                <p>Designation: <span class="text-muted">{{
+                                        $profile->partnerPreference->designation ?? '-' }}</span></p>
+                            </div>
+                            <div class="col">
+                                <p>Annual Income: <span class="text-muted">{{
+                                        $profile->partnerPreference->annual_income ? (is_array($pai =
+                                        json_decode($profile->partnerPreference->annual_income, true)) ? implode(', ', $pai)
+                                        : $profile->partnerPreference->annual_income) : '-' }}</span></p>
+                            </div>
+                        </div>
+
+                        <!-- Lifestyle Preferences -->
+                        <h5 class="">Lifestyle Preferences</h5>
+                        <div class="row row-cols-1 row-cols-md-2">
+                            <div class="col">
+                                <p>Diet: <span class="text-muted">{{ $profile->partnerPreference->diet ?
+                                        (is_array($pdiet = json_decode($profile->partnerPreference->diet, true)) ?
+                                        implode(', ', $pdiet) : $profile->partnerPreference->diet) : '-' }}</span></p>
+                            </div>
+                            <div class="col">
+                                <p>Drinking: <span class="text-muted">{{
+                                        $profile->partnerPreference->drinking_status ? (is_array($pdrink =
+                                        json_decode($profile->partnerPreference->drinking_status, true)) ? implode(', ',
+                                        $pdrink) : $profile->partnerPreference->drinking_status) : '-' }}</span></p>
+                            </div>
+                            <div class="col">
+                                <p>Smoking: <span class="text-muted">{{
+                                        $profile->partnerPreference->smoking_status ? (is_array($psmoke =
+                                        json_decode($profile->partnerPreference->smoking_status, true)) ? implode(', ',
+                                        $psmoke) : $profile->partnerPreference->smoking_status) : '-' }}</span></p>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <p>About Your Partner Preference: <span class="text-muted">{{
+                                    $profile->partnerPreference->about ?? '-' }}</span></p>
+                        </div>
+                        
+                        <h5 class="">Gallery</h5>
+                        <div class="row mt-2">
+                            <div class="col-12">
+                                @php
+                                    $photos = json_decode($profile->photo, true);
+                                @endphp
+                        
+                                @if (!empty($photos) && is_array($photos))
+                                    <div class="row g-2">
+                                        @foreach ($photos as $img)
+                                            <div class="col-6 col-md-2"> {{-- 5 images per row on desktop --}}
+                                                <div class="border p-1 rounded text-center">
+                                                    <img src="{{ asset('storage/' . $img) }}" 
+                                                         class="img-fluid"
+                                                         alt="Photo"
+                                                         style="max-height: 280px; object-fit: cover;">
+                                                </div>
                                             </div>
                                         @endforeach
-                                    @else
-                                        <div class="avatar">
-                                            <img class="avatar-img img-fluid" src="{{ asset('assets/sb2/assets/img/illustrations/profiles/profile-1.png') }}" alt="No Photo">
-                                        </div>
-                                    @endif
-                                </div>
-                            </div>
-                            <div class="col-12">
-                                <p><strong>About Yourself:</strong> <span class="text-muted">{{ $profile->bio ?? '-' }}</span></p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Religious Information Card -->
-            <div class="col">
-                <div class="card shadow-sm">
-                    <div class="card-header bg-primary text-white">
-                        <h5 class="mb-0">Religious Information</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row row-cols-1 row-cols-md-2 g-3">
-                            <div class="col">
-                                <p><strong>Religion:</strong> <span class="text-muted">{{ $profile->religion ?? '-' }}</span></p>
-                            </div>
-                            <div class="col">
-                                <p><strong>Caste:</strong> <span class="text-muted">{{ $profile->caste ?? '-' }}</span></p>
-                            </div>
-                            <div class="col">
-                                <p><strong>Sub Caste:</strong> <span class="text-muted">{{ $profile->sub_caste ?? '-' }}</span></p>
-                            </div>
-                            <div class="col">
-                                <p><strong>Gotra:</strong> <span class="text-muted">{{ $profile->gotra ?? '-' }}</span></p>
+                                    </div>
+                                @else
+                                    <div class="avatar text-center">
+                                        <img class="avatar-img img-fluid"
+                                             src="{{ asset('assets/sb2/assets/img/illustrations/profiles/profile-1.png') }}"
+                                             alt="No Photo">
+                                    </div>
+                                @endif
                             </div>
                         </div>
-                    </div>
-                </div>
-            </div>
 
-            <!-- Horoscope Information Card -->
-            <div class="col">
-                <div class="card shadow-sm">
-                    <div class="card-header bg-primary text-white">
-                        <h5 class="mb-0">Horoscope Information</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row row-cols-1 row-cols-md-3 g-3">
-                            <div class="col">
-                                <p><strong>Time of Birth:</strong> <span class="text-muted">{{ $profile->birth_time ?? '-' }}</span></p>
-                            </div>
-                            <div class="col">
-                                <p><strong>Place of Birth:</strong> <span class="text-muted">{{ $profile->birth_place ?? '-' }}</span></p>
-                            </div>
-                            <div class="col">
-                                <p><strong>Manglik Status:</strong> <span class="text-muted">{{ $profile->manglik_status ?? '-' }}</span></p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Educational & Career Information Card -->
-            <div class="col">
-                <div class="card shadow-sm">
-                    <div class="card-header bg-primary text-white">
-                        <h5 class="mb-0">Educational & Career Information</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row row-cols-1 row-cols-md-2 g-3">
-                            <div class="col">
-                                <p><strong>Highest Qualification:</strong> <span class="text-muted">{{ $profile->highest_qualification ? (is_array($hq = json_decode($profile->highest_qualification, true)) ? implode(', ', $hq) : $profile->highest_qualification) : '-' }}</span></p>
-                            </div>
-                            <div class="col">
-                                <p><strong>Education Field:</strong> <span class="text-muted">{{ $profile->education_field ? (is_array($ef = json_decode($profile->education_field, true)) ? implode(', ', $ef) : $profile->education_field) : '-' }}</span></p>
-                            </div>
-                            <div class="col">
-                                <p><strong>Name of Institute:</strong> <span class="text-muted">{{ $profile->institute_name ?? '-' }}</span></p>
-                            </div>
-                            <div class="col">
-                                <p><strong>Work Location:</strong> <span class="text-muted">{{ $profile->work_location ?? '-' }}</span></p>
-                            </div>
-                            <div class="col">
-                                <p><strong>Working With:</strong> <span class="text-muted">{{ $profile->employer_name ?? '-' }}</span></p>
-                            </div>
-                            <div class="col">
-                                <p><strong>Profession:</strong> <span class="text-muted">{{ $profile->profession ? (is_array($prof = json_decode($profile->profession, true)) ? implode(', ', $prof) : $profile->profession) : '-' }}</span></p>
-                            </div>
-                            <div class="col">
-                                <p><strong>Business/Company Name:</strong> <span class="text-muted">{{ $profile->business_name ?? '-' }}</span></p>
-                            </div>
-                            <div class="col">
-                                <p><strong>Designation:</strong> <span class="text-muted">{{ $profile->designation ?? '-' }}</span></p>
-                            </div>
-                            <div class="col">
-                                <p><strong>Income Range:</strong> <span class="text-muted">{{ $profile->annual_income ?? '-' }}</span></p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Lifestyle Information Card -->
-            <div class="col">
-                <div class="card shadow-sm">
-                    <div class="card-header bg-primary text-white">
-                        <h5 class="mb-0">Lifestyle Information</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row row-cols-1 row-cols-md-2 g-3">
-                            <div class="col">
-                                <p><strong>Diet:</strong> <span class="text-muted">{{ $profile->diet ? (is_array($diet = json_decode($profile->diet, true)) ? implode(', ', $diet) : $profile->diet) : '-' }}</span></p>
-                            </div>
-                            <div class="col">
-                                <p><strong>Drinking:</strong> <span class="text-muted">{{ $profile->drinking_status ?? '-' }}</span></p>
-                            </div>
-                            <div class="col">
-                                <p><strong>Smoking:</strong> <span class="text-muted">{{ $profile->smoking_status ?? '-' }}</span></p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Family Information Card -->
-            <div class="col">
-                <div class="card shadow-sm">
-                    <div class="card-header bg-primary text-white">
-                        <h5 class="mb-0">Family Information</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row row-cols-1 row-cols-md-2 g-3">
-                            <div class="col">
-                                <p><strong>Father's Occupation:</strong> <span class="text-muted">{{ $profile->father_occupation ?? '-' }}</span></p>
-                            </div>
-                            <div class="col">
-                                <p><strong>Mother's Occupation:</strong> <span class="text-muted">{{ $profile->mother_occupation ?? '-' }}</span></p>
-                            </div>
-                            <div class="col">
-                                <p><strong>Number of Brothers:</strong> <span class="text-muted">{{ $profile->brother_count ?? '-' }}</span></p>
-                            </div>
-                            <div class="col">
-                                <p><strong>Married Brothers:</strong> <span class="text-muted">{{ $profile->married_brother_count ?? '-' }}</span></p>
-                            </div>
-                            <div class="col">
-                                <p><strong>Number of Sisters:</strong> <span class="text-muted">{{ $profile->sister_count ?? '-' }}</span></p>
-                            </div>
-                            <div class="col">
-                                <p><strong>Married Sisters:</strong> <span class="text-muted">{{ $profile->married_sister_count ?? '-' }}</span></p>
-                            </div>
-                            <div class="col">
-                                <p><strong>Family Type:</strong> <span class="text-muted">{{ $profile->family_type ?? '-' }}</span></p>
-                            </div>
-                            <div class="col">
-                                <p><strong>Family Affluence:</strong> <span class="text-muted">{{ $profile->family_affluence ?? '-' }}</span></p>
-                            </div>
-                            <div class="col">
-                                <p><strong>Family Values:</strong> <span class="text-muted">{{ $profile->family_values ?? '-' }}</span></p>
-                            </div>
-                            <div class="col-12">
-                                <p><strong>About Your Family:</strong> <span class="text-muted">{{ $profile->family_bio ?? '-' }}</span></p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Partner Preference Card -->
-            <div class="col">
-                <div class="card shadow-sm">
-                    <div class="card-header bg-primary text-white">
-                        <h5 class="mb-0">Partner Preference</h5>
-                    </div>
-                    <div class="card-body">
-                        @if($profile->partnerPreference)
-                            <!-- Basic Preferences -->
-                            <h6 class="mt-3 mb-2">Basic Preferences</h6>
-                            <div class="row row-cols-1 row-cols-md-2 g-3">
-                                <div class="col">
-                                    <p><strong>Minimum Age:</strong> <span class="text-muted">{{ $profile->partnerPreference->min_age ?? '-' }}</span></p>
-                                </div>
-                                <div class="col">
-                                    <p><strong>Maximum Age:</strong> <span class="text-muted">{{ $profile->partnerPreference->max_age ?? '-' }}</span></p>
-                                </div>
-                                <div class="col">
-                                    <p><strong>Minimum Height:</strong> <span class="text-muted">{{ $profile->partnerPreference->min_height ?? '-' }}</span></p>
-                                </div>
-                                <div class="col">
-                                    <p><strong>Maximum Height:</strong> <span class="text-muted">{{ $profile->partnerPreference->max_height ?? '-' }}</span></p>
-                                </div>
-                                <div class="col">
-                                    <p><strong>Marital Status:</strong> <span class="text-muted">{{ $profile->partnerPreference->marital_status ? (is_array($ms = json_decode($profile->partnerPreference->marital_status, true)) ? implode(', ', $ms) : $profile->partnerPreference->marital_status) : '-' }}</span></p>
-                                </div>
-                                <div class="col">
-                                    <p><strong>Religion:</strong> <span class="text-muted">{{ $profile->partnerPreference->partner_religion ? (is_array($pr = json_decode($profile->partnerPreference->partner_religion, true)) ? implode(', ', $pr) : $profile->partnerPreference->partner_religion) : '-' }}</span></p>
-                                </div>
-                                <div class="col">
-                                    <p><strong>Caste:</strong> <span class="text-muted">{{ $profile->partnerPreference->partner_caste ? (is_array($pc = json_decode($profile->partnerPreference->partner_caste, true)) ? implode(', ', $pc) : $profile->partnerPreference->partner_caste) : '-' }}</span></p>
-                                </div>
-                                <div class="col">
-                                    <p><strong>Manglik Status:</strong> <span class="text-muted">{{ $profile->partnerPreference->manglik_status ? (is_array($ms = json_decode($profile->partnerPreference->manglik_status, true)) ? implode(', ', $ms) : $profile->partnerPreference->manglik_status) : '-' }}</span></p>
-                                </div>
-                            </div>
-
-                            <!-- Location Preferences -->
-                            <h6 class="mt-4 mb-2">Location Preferences</h6>
-                            <div class="row row-cols-1 row-cols-md-2 g-3">
-                                <div class="col">
-                                    <p><strong>Country:</strong> <span class="text-muted">{{ $profile->partnerPreference->country ? (is_array($pc = json_decode($profile->partnerPreference->country, true)) ? implode(', ', $pc) : $profile->partnerPreference->country) : '-' }}</span></p>
-                                </div>
-                                <div class="col">
-                                    <p><strong>State:</strong> <span class="text-muted">{{ $profile->partnerPreference->state ? (is_array($ps = json_decode($profile->partnerPreference->state, true)) ? implode(', ', $ps) : $profile->partnerPreference->state) : '-' }}</span></p>
-                                </div>
-                                <div class="col">
-                                    <p><strong>City:</strong> <span class="text-muted">{{ $profile->partnerPreference->city ? (is_array($pcity = json_decode($profile->partnerPreference->city, true)) ? implode(', ', $pcity) : $profile->partnerPreference->city) : '-' }}</span></p>
-                                </div>
-                                <div class="col">
-                                    <p><strong>Citizenship:</strong> <span class="text-muted">{{ $profile->partnerPreference->citizenship ?? '-' }}</span></p>
-                                </div>
-                                <div class="col">
-                                    <p><strong>Country Grew Up:</strong> <span class="text-muted">{{ $profile->partnerPreference->grow_up_in ? (is_array($pgui = json_decode($profile->partnerPreference->grow_up_in, true)) ? implode(', ', $pgui) : $profile->partnerPreference->grow_up_in) : '-' }}</span></p>
-                                </div>
-                            </div>
-
-                            <!-- Education & Career Preferences -->
-                            <h6 class="mt-4 mb-2">Education & Career Preferences</h6>
-                            <div class="row row-cols-1 row-cols-md-2 g-3">
-                                <div class="col">
-                                    <p><strong>Highest Qualification:</strong> <span class="text-muted">{{ $profile->partnerPreference->highest_qualification ? (is_array($phq = json_decode($profile->partnerPreference->highest_qualification, true)) ? implode(', ', $phq) : $profile->partnerPreference->highest_qualification) : '-' }}</span></p>
-                                </div>
-                                <div class="col">
-                                    <p><strong>Education Field:</strong> <span class="text-muted">{{ $profile->partnerPreference->education_field ? (is_array($pef = json_decode($profile->partnerPreference->education_field, true)) ? implode(', ', $pef) : $profile->partnerPreference->education_field) : '-' }}</span></p>
-                                </div>
-                                <div class="col">
-                                    <p><strong>Working With:</strong> <span class="text-muted">{{ $profile->partnerPreference->employer_name ? (is_array($pen = json_decode($profile->partnerPreference->employer_name, true)) ? implode(', ', $pen) : $profile->partnerPreference->employer_name) : '-' }}</span></p>
-                                </div>
-                                <div class="col">
-                                    <p><strong>Profession:</strong> <span class="text-muted">{{ $profile->partnerPreference->profession ? (is_array($pprof = json_decode($profile->partnerPreference->profession, true)) ? implode(', ', $pprof) : $profile->partnerPreference->profession) : '-' }}</span></p>
-                                </div>
-                                <div class="col">
-                                    <p><strong>Designation:</strong> <span class="text-muted">{{ $profile->partnerPreference->designation ?? '-' }}</span></p>
-                                </div>
-                                <div class="col">
-                                    <p><strong>Annual Income:</strong> <span class="text-muted">{{ $profile->partnerPreference->annual_income ? (is_array($pai = json_decode($profile->partnerPreference->annual_income, true)) ? implode(', ', $pai) : $profile->partnerPreference->annual_income) : '-' }}</span></p>
-                                </div>
-                            </div>
-
-                            <!-- Lifestyle Preferences -->
-                            <h6 class="mt-4 mb-2">Lifestyle Preferences</h6>
-                            <div class="row row-cols-1 row-cols-md-2 g-3">
-                                <div class="col">
-                                    <p><strong>Diet:</strong> <span class="text-muted">{{ $profile->partnerPreference->diet ? (is_array($pdiet = json_decode($profile->partnerPreference->diet, true)) ? implode(', ', $pdiet) : $profile->partnerPreference->diet) : '-' }}</span></p>
-                                </div>
-                                <div class="col">
-                                    <p><strong>Drinking:</strong> <span class="text-muted">{{ $profile->partnerPreference->drinking_status ? (is_array($pdrink = json_decode($profile->partnerPreference->drinking_status, true)) ? implode(', ', $pdrink) : $profile->partnerPreference->drinking_status) : '-' }}</span></p>
-                                </div>
-                                <div class="col">
-                                    <p><strong>Smoking:</strong> <span class="text-muted">{{ $profile->partnerPreference->smoking_status ? (is_array($psmoke = json_decode($profile->partnerPreference->smoking_status, true)) ? implode(', ', $psmoke) : $profile->partnerPreference->smoking_status) : '-' }}</span></p>
-                                </div>
-                                <div class="col-12">
-                                    <p><strong>About Your Partner Preference:</strong> <span class="text-muted">{{ $profile->partnerPreference->about ?? '-' }}</span></p>
-                                </div>
-                            </div>
-                        @else
-                            <div class="row row-cols-1 g-3">
-                                <div class="col">
-                                    <p class="text-muted">No partner preferences available</p>
-                                </div>
-                            </div>
-                        @endif
                     </div>
                 </div>
             </div>
@@ -458,11 +557,13 @@
         justify-content: center;
         align-items: center;
     }
+
     .avatar-img {
         max-width: 100%;
         max-height: 100%;
         object-fit: contain;
     }
+
     .preview-container {
         width: 100px;
         height: 100px;
@@ -474,26 +575,32 @@
         justify-content: center;
         align-items: center;
     }
+
     .preview-container div {
         text-align: center;
         font-size: 12px;
         word-break: break-all;
         padding: 5px;
     }
+
     .card {
         transition: all 0.3s ease;
     }
+
     .card:hover {
         transform: translateY(-5px);
         box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
     }
+
     .nav-borders .nav-link {
         color: #6c757d;
     }
+
     .nav-borders .nav-link.active {
         color: #007bff;
         border-bottom: 2px solid #007bff;
     }
+
     .badge {
         padding: 6px 12px;
     }
@@ -507,3 +614,104 @@
     feather.replace();
 </script>
 @endpush
+
+
+
+
+
+        <!-- Contact Information Card -->
+        <!--<div class="col">-->
+        <!--    <div class="card shadow-sm">-->
+        <!--        <div class="card-header bg-primary text-white">-->
+        <!--            <h5 class="mb-0 text-white">Contact Information</h5>-->
+        <!--        </div>-->
+        <!--        <div class="card-body">-->
+
+        <!--        </div>-->
+        <!--    </div>-->
+        <!--</div>-->
+
+        <!-- Client’s Basic Information Card -->
+        <!--<div class="col">-->
+        <!--    <div class="card shadow-sm">-->
+        <!--        <div class="card-header bg-primary text-white">-->
+        <!--            <h5 class="mb-0 text-white">Client’s Basic Information</h5>-->
+        <!--        </div>-->
+        <!--        <div class="card-body">-->
+
+        <!--        </div>-->
+        <!--    </div>-->
+        <!--</div>-->
+
+        <!-- Religious Information Card -->
+        <!--<div class="col">-->
+        <!--    <div class="card shadow-sm">-->
+        <!--        <div class="card-header bg-primary text-white">-->
+        <!--            <h5 class="mb-0 text-white">Religious Information</h5>-->
+        <!--        </div>-->
+        <!--        <div class="card-body">-->
+
+        <!--        </div>-->
+        <!--    </div>-->
+        <!--</div>-->
+
+        <!-- Horoscope Information Card -->
+        <!--<div class="col">-->
+        <!--    <div class="card shadow-sm">-->
+        <!--        <div class="card-header bg-primary text-white">-->
+        <!--            <h5 class="mb-0 text-white">Horoscope Information</h5>-->
+        <!--        </div>-->
+        <!--        <div class="card-body">-->
+        <!--            <div class="row row-cols-1 row-cols-md-3 g-3">-->
+
+        <!--            </div>-->
+        <!--        </div>-->
+        <!--    </div>-->
+        <!--</div>-->
+
+        <!-- Educational & Career Information Card -->
+        <!--<div class="col">-->
+        <!--    <div class="card shadow-sm">-->
+        <!--        <div class="card-header bg-primary text-white">-->
+        <!--            <h5 class="mb-0 text-white">Educational & Career Information</h5>-->
+        <!--        </div>-->
+        <!--        <div class="card-body">-->
+
+        <!--        </div>-->
+        <!--    </div>-->
+        <!--</div>-->
+
+        <!-- Lifestyle Information Card -->
+        <!--<div class="col">-->
+        <!--    <div class="card shadow-sm">-->
+        <!--        <div class="card-header bg-primary text-white">-->
+        <!--            <h5 class="mb-0 text-white">Lifestyle Information</h5>-->
+        <!--        </div>-->
+        <!--        <div class="card-body">-->
+
+        <!--        </div>-->
+        <!--    </div>-->
+        <!--</div>-->
+
+        <!-- Family Information Card -->
+        <!--<div class="col">-->
+        <!--    <div class="card shadow-sm">-->
+        <!--        <div class="card-header bg-primary text-white">-->
+        <!--            <h5 class="mb-0 text-white">Family Information</h5>-->
+        <!--        </div>-->
+        <!--        <div class="card-body">-->
+
+        <!--        </div>-->
+        <!--    </div>-->
+        <!--</div>-->
+        <!-- Partner Preference Card -->
+        <!--<div class="col">-->
+        <!--    <div class="card shadow-sm">-->
+        <!--        <div class="card-header bg-primary text-white">-->
+        <!--            <h5 class="mb-0 text-white">Partner Preference</h5>-->
+        <!--        </div>-->
+        <!--        <div class="card-body">-->
+
+        <!--        </div>-->
+        <!--    </div>-->
+        <!--</div>-->
