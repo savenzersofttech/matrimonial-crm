@@ -13,10 +13,76 @@ use App\Models\ProfileEmployeeAssignment;
 use Illuminate\Support\Facades\Validator;
 use App\Helpers\ApiResponse;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
 
 class WelcomeCallController extends Controller
 {
    
+     public function showAll(Request $request)
+    {
+        $dbColumns = (new WelcomeCall())->getFillable();
+        $order = $request->post('order');
+        $start = $request->post('start') ?? 0;
+        $length = $request->post('length') ?? 10;
+        $search = $request->post('search')['value'] ?? null;
+
+        // $query = Lead::selectRaw('*')->with(['profile:id,name,email,phone_number']);
+        $query = WelcomeCall::with([
+            'profile:id,name,email,phone_number,profile_source_id,profile_source_comment'
+        ]);
+
+        // Search filter
+        if ($search) {
+            $query->where(function ($q) use ($dbColumns, $search) {
+                foreach ($dbColumns as $key => $column) {
+                    if ($key === 0) {
+                        $q->where($column, 'like', "%$search%");
+                    } else {
+                        $q->orWhere($column, 'like', "%$search%");
+                    }
+                }
+            });
+        }
+
+        // Order
+        if (isset($order[0]['dir'])) {
+            $dir = $order[0]['dir'];
+            $colIndex = $order[0]['column'] ?? false;
+            $col = $dbColumns[$colIndex] ?? false;
+            if ($col) {
+                $query->orderBy($col, $dir);
+            }
+        } else {
+            $query->orderBy('id', 'desc');
+        }
+
+        // Count recordsFiltered before applying limit & offset
+        $recordsFiltered = $query->count(DB::raw($start ? "$start" : '1'));
+
+        // Pagination
+        $data = $query->offset($start)->limit($length)->get()->toArray();
+        // Add serial number manually based on pagination offset
+        foreach ($data as $index => &$item) {
+            $item['s_no'] = $start + $index + 1;
+
+            $item['created_at'] = \Carbon\Carbon::parse($item['created_at'])->format('d/m/Y h:i A');
+            $item['updated_at'] = \Carbon\Carbon::parse($item['updated_at'])->format('d/m/Y h:i A');
+        }
+        // Total records
+        $recordsTotal = WelcomeCall::count();
+
+        // Prepare response
+        $draw = $request->post('draw');
+
+        $response = [
+            'draw' => intval($draw),
+            'recordsTotal' => intval($recordsTotal),
+            'recordsFiltered' => intval($recordsFiltered),
+            'data' => $data,
+        ];
+
+        return response()->json($response);
+    }
 
     public function index()
     {

@@ -12,6 +12,7 @@ use App\Http\Controllers\ {
 use App\Http\Controllers\Services\{ 
     ProfileSearchController,
     PaymentLinkController,
+    WelcomeCallController,
 
 };
 
@@ -31,6 +32,9 @@ use App\Http\Controllers\Sales\{
 
     Route::post('/sales-targets/show-all', [SalesTargetController ::class, 'showAll'])->name('admin.sales-targets.showAll.api');
     Route::post('/sales-activity/show-all', [LeadActivityController::class, 'showAll'])->name('sales.leadactivity.showAll.api');
+
+    //servies api
+    Route::post('services/welcome-calls/show-all', [WelcomeCallController::class, 'showAll'])->name('services.welcome-calls.showAll.api');
 
 
             Route::post('/payments/show-all', [PaymentLinkController::class, 'showAll'])->name('services.payments.showAll');

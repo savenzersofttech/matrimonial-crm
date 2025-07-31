@@ -36,88 +36,23 @@
             </div>
 
             <div class="card-body">
-                <table id="simpleDatatable">
-                    <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>Profile Info</th>
-                            <th>Assigned By</th>
-                            <th>Note</th>
-                            <th>Last Comment</th>
-                            <th>Last Follow-up Date</th>
-                            <th>Last Status</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tfoot>
-                        <tr>
-                            <th>#</th>
-                            <th>Profile Info</th>
-                            <th>Assigned By</th>
-                            <th>Note</th>
-                            <th>Last Comment</th>
-                            <th>Last Follow-up Date</th>
-                            <th>Last Status</th>
-                            <th>Actions</th>
-                        </tr>
-                    </tfoot>
-                    <tbody>
+                 <table id="datatablesSimple" class="table table-bordered table-striped text-center">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Profile Info</th>
+                                <th>Contact info</th>
+                                <th>Note</th>
+                                <th>Last Comment</th>
+                                <th>Last Follow-up Date</th>
+                                <th>Last Status</th>
+                                <th>Actions</th>
+                            </tr>
 
-                        @forelse($calls as $index => $call)
-                        <tr>
-                            <td>{{ $index + 1 }}</td>
-                            <td>
-                                <a href="#"><strong>{{ $call->profile->name ?? 'N/A' }}</strong></a>
+                        </thead>
+                    </table>
 
-                            </td>
-                            <td>
-                                @if ($call->profileAssignment && $call->profileAssignment->assignedByUser)
-                                {{ $call->profileAssignment->assignedByUser->name ?? '-' }}
-                                @else
-                                -
-                                @endif
-                            </td>
-                            <td>{{ $call->profileAssignment->note ?? '-' }}</td>
-
-                            <td>{{ $call->comment ?? '-' }}</td>
-                            <td>
-                                @if ($call->follow_up_date)
-                                {{ \Carbon\Carbon::parse($call->follow_up_date)->format('d-m-Y H:i') }}
-                                @else
-                                <span class="text-center">-</span>
-                                @endif
-                            </td>
-                            <td>
-                                <div class="badge bg-{{ getStatusClass($call->status ?? 'light') }} text-white rounded-pill">
-                                    {{ $call->status ?? '-' }}
-                                </div>
-                            </td>
-                            <td>
-                                {{-- @dd($call->toArray()); --}}
-
-                                <button type="button" class="btn editBtn btn-icon btn-transparent-dark me-2" href="{{ route('services.welcome-calls.edit', $call->id) }}" data-json='@json($call)' data-action="{{ route('services.welcome-calls.update', $call->id) }}">
-                                    <i class="fa-solid fa-pen-to-square"></i>
-                                </button>
-
-
-                                <button type="button" data-id="{{ $call->profile['id'] }}" class="btn viewBtn btn-icon btn-transparent-dark me-2">
-                                    <i class="fa-solid fa-eye"></i>
-                                </button>
-
-
-                                <button type="button" class="btn btn-datatable btn-icon btn-transparent-dark deleteBtn" data-action="{{ route('services.welcome-calls.destroy', $call->id) }}">
-                                    <i class="fa-regular fa-trash-can"></i>
-                                </button>
-
-                            </td>
-                        </tr>
-                        @empty
-                        <tr>
-                            <td colspan="8" class="text-center">No welcome calls found.</td>
-                        </tr>
-                        @endforelse
-                    </tbody>
-                </table>
+               
             </div>
         </div>
     </div>
@@ -232,7 +167,7 @@
                                 <thead>
                                     <tr>
                                         <th>#</th>
-                                        <th>Follow-up Date</th>
+                                        <th>    -up Date</th>
                                         <th>Status</th>
                                         <th>Comment</th>
                                         <th>Employee</th>
@@ -290,131 +225,203 @@ default => 'dark',
 
 
 @push('scripts')
-<script>
-    $(document).ready(function() {
-        const phoneInput = document.querySelector("#phone");
-        const iti = window.intlTelInputGlobals.getInstance(phoneInput); // get the instance
-
-        $('.editBtn').click(function(e) {
-            e.preventDefault();
-            const data = $(this).data('json');
-            console.log(data);
-            const actionUrl = this.getAttribute('data-action');
-            const form = $('#editModal').find('form')[0];
-            form.reset(); // ← Reset all fields
-            const $form = $(form);
-            $form.attr('action', actionUrl);
-            $form.find('input[name="name"]').val(data ? .profile ? .name || '');
-            $form.find('input[name="email"]').val(data ? .profile ? .email || '');
-            $form.find('select[name="status"]').val(data ? .status || '');
-            $form.find('input[name="follow_up_date"]').val(data ? .follow_up_date || '');
-            $form.find('textarea[name="comment"]').val(data ? .comment || '');
-            if (data ? .profile ? .phone) {
-                let rawPhone = data.profile.phone.replace(/[\s-]/g, '');
-                iti.setNumber(rawPhone);
-            }
-            $('#editModal').modal('show');
-        });
-
-        // View Button Click
-        // View Button Click
-        $('.viewBtn').click(async function(e) {
-            e.preventDefault();
-            const callId = $(this).data('id');
-            try {
-                const response = await makeHttpRequest(`/api/welcome-calls/${callId}`, 'GET');
-                if (response.success) {
-                    const data = response.data;
-                    $('#view-name').text(data.profile.name || '-');
-                    $('#view-email').text(data.profile.email || '-');
-                    $('#view-phone').text(data.profile.phone || '-');
-                    $('#view-follow-up-date').text(data.follow_up_date ? new Date(data
-                        .follow_up_date).toLocaleString('en-GB', {
-                        day: '2-digit'
-                        , month: '2-digit'
-                        , year: 'numeric'
-                        , hour: '2-digit'
-                        , minute: '2-digit'
-                    }) : '-');
-                    $('#view-status').text(data.status || '-');
-                    $('#view-assigned-by').text(data.follow_up_histories[0] ? .employee ? .name || '-');
-                    $('#view-comment').text(data.comment || '-');
-
-                    // Populate follow-up history table
-                    const historyTable = $('#view-follow-up-history');
-                    historyTable.empty();
-                    if (data.follow_up_histories && data.follow_up_histories.length > 0) {
-                        data.follow_up_histories.forEach((history, index) => {
-                            historyTable.append(`
-                            <tr>
-                                <td>${index + 1}</ted>
-                                <td>${history.follow_up_date ? new Date(history.follow_up_date).toLocaleString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-'}</td>
-                               <td>
-  <div class="badge bg-${getStatusClass(history.status)} text-white rounded-pill">
-    ${history.status || '-'}
-  </div>
-</td>
-                                <td>${history.comment || '-'}</td>
-                                <td>${history.employee?.name || '-'}</td>
-                            </tr>
-                        `);
-                        });
-                    } else {
-                        historyTable.append(
-                            '<tr><td colspan="5" class="text-center">No follow-up history available.</td></tr>'
-                        );
-                    }
-                    $('#viewModal').modal('show');
-                } else {
-                    showDangerToast('Error', response.message || 'Failed to fetch data.');
-                }
-            } catch (error) {
-                showDangerToast('Error', error.message || 'Error fetching data. Please try again.');
-            }
-        });
-    });
-
-    $(document).on('click', '.deleteBtn', function(e) {
-        e.preventDefault();
-        const button = $(this);
-        const action = button.data('action');
-
-        Swal.fire({
-            title: 'Are you sure?'
-            , text: "You won’t be able to revert this!"
-            , icon: 'warning'
-            , showCancelButton: true
-            , confirmButtonColor: '#d33'
-            , cancelButtonColor: '#6c757d'
-            , confirmButtonText: 'Yes, delete it!'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                const form = $('<form>', {
-                    method: 'POST'
-                    , action: action
-                });
-
-                form.append('@csrf');
-                form.append('@method("DELETE")');
-
-                $('body').append(form);
-                form.submit();
-            }
-        });
-    });
-
-
-    window.addEventListener('DOMContentLoaded', event => {
-        const datatableTable = document.getElementById('datatableTable');
-        if (datatableTable) {
-            new simpleDatatables.DataTable(datatableTable);
-        }
-
-        const datatableTableView = document.getElementById('datatableTableView');
-        if (datatableTableView) {
-            new datatableTableView.DataTable(datatableTableView);
-        }
-    });
-
+ <script>
+   let configration;
+   const updateUrl = @json(route('sales.leads.update', ['lead' => '__ID__']));
+   document.addEventListener("DOMContentLoaded", function() {
+       validationConfig['ignore'] = [];
+   
+       let colDefs = [{
+               targets: 0,
+               className: 'text-center',
+               orderable: false,
+               searchable: false,
+               width: '50px', // <-- minimum width
+               render: function(e, t, a, s) {
+                   return a.s_no;
+               }
+           },
+           {
+               targets: -1,
+               title: "Actions",
+               orderable: !1,
+               searchable: !1,
+               render: function(e, t, a, s) {
+                   console.log(e, t, a, s);
+                   tableData[a.id] = a; // Fix: Use a.id as the key directly
+                   return `
+                   <button 
+                       type="button"
+                       data-id="index_${a.id}" 
+                       onclick="openEditModal(${a.id}, this, event)" 
+                       class="btn btn-datatable btn-icon btn-transparent-dark me-2"
+                       aria-label="Edit User"
+                       title="Edit">    <i class="fas fa-pen"></i>
+   
+                   </button>
+                   <button 
+                       type="button"
+                       data-href = "{{ route('sales.leads.destroy', ':id') }}"
+                       data-id="${a.id}" 
+                       onclick="deleteConfirmation(this, event)"  
+                       class="btn btn-datatable btn-icon btn-transparent-dark"
+                       aria-label="Delete User"
+                       title="Delete"><i class="far fa-trash-can"></i>
+                   </button>
+                   `;
+               },
+           },
+       ];
+   
+       configration = {
+           processing: true,
+           serverSide: true,
+           ajax: {
+               url: "{{ route('services.welcome-calls.showAll.api') }}",
+               type: 'POST'
+           },
+           columns: [{
+                   data: 's_no',
+               },
+   
+               {
+                   data: 'profile.name',
+                     className: 'text-start'
+   
+               },
+               {
+                   data: null,
+                   className: 'text-start',
+                   render: function (data, type, row) {
+                       const phone = row.profile?.phone_number || '-';
+                       const email = row.profile?.email || '';
+                       let html = '';
+   
+                       if (phone) {
+                           html += `<div><i class="fas fa-phone me-1"></i> ${phone}</div>`;
+                       }
+   
+                       if (email) {
+                           html += `<div><i class="fas fa-envelope  me-1"></i> ${email}</div>`;
+                       }
+   
+                       return html;
+                   }
+               },
+               {
+                   data: 'comment'
+               },
+   
+               {
+                   data: 'status',
+                   orderable: false,
+                   searchable: false,
+                   render: function(data, type, row) {
+                       return getStatusBadge(data);
+                   }
+               },
+               {
+                   data: 'follow_up',
+                     className: 'text-start',
+               },
+               {
+                   data: 'note',
+                   orderable: false,
+                     className: 'text-start',
+                   searchable: false
+               },
+               {
+                   data: 'follow_up',
+                   orderable: false,
+                     className: 'text-start',
+                   searchable: false
+               }, {
+                   data: 'created_at',
+                   orderable: false,
+                     className: 'text-start',
+                   searchable: false
+               }
+           ],
+           columnDefs: colDefs || [],
+       };
+   
+   
+   
+   
+       $('#plan').on('change', function() {
+           const selectedOption = $(this).find('option:selected');
+           const price = selectedOption.data('price') || 0;
+           $('#price').val(price);
+       });
+   
+   
+       $(regForm).validate(validationConfig);
+   
+     
+   
+   });
+   
+   
+   
+   function openAddModal() {
+       var FormModalgx = new bootstrap.Modal($('#FormModalgx')[0]);
+       var $form = $('#regForm');
+       $('#FormModalgxLabel').text('Create New Lead');
+       $form.find('button[type="submit"]').text('Save');
+       $form.find('input[name="_method"]').remove();
+       // Set default status and hide it
+       $form[0].reset();
+       $form.attr('action', "{{ route('sales.leads.store') }}");
+       FormModalgx.show();
+   }
+   
+   
+   function openEditModal(id, element, event) {
+       event.preventDefault();
+       const rowData = tableData[id]; // Fix: Use id directly as the key
+       console.log(rowData, 'rowData Data:', `index_${id}`);
+       console.log(rowData);
+       if (!rowData) return;
+   
+       var $form = $('#regForm');
+       $form[0].reset();
+   
+       $form.attr('action', updateUrl.replace('__ID__', rowData.id));
+       $form.attr('method', 'POST');
+       $('#FormModalgxLabel').text('Edit Lead');
+       $form.find('button[type="submit"]').text('Update');
+   
+       let $methodInput = $form.find('input[name="_method"]');
+       if (!$methodInput.length) {
+           $methodInput = $('<input>', {
+               type: 'hidden',
+               name: '_method'
+           });
+           $form.append($methodInput);
+       }
+   
+   
+       $('#name').val(rowData.profile.name);
+       $('#email').val(rowData.profile.email);
+   const fullNumber = rowData.profile.phone_number;
+   const dialCode = '+' + phoneIti.getSelectedCountryData().dialCode;
+   
+   // Remove the dial code prefix from the full number
+   const localNumber = fullNumber.startsWith(dialCode) ? fullNumber.slice(dialCode.length) : fullNumber;
+   
+   document.querySelector('#phone_code').value = dialCode;
+   document.querySelector('#phone_number').value = localNumber;
+       $('#status').val(rowData.status);
+       $('#follow_up').val(rowData.follow_up_row);
+       $('#source_comment').val(rowData.profile.profile_source_comment);
+       $('#note').val(rowData.note);
+       $('#profile_source_id').val(rowData.profile.profile_source.id);
+   
+       $methodInput.val('PUT');
+       new bootstrap.Modal($('#FormModalgx')[0]).show();
+   }
 </script>
 @endpush
+    
+
+
