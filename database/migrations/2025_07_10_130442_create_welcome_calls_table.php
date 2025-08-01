@@ -11,10 +11,11 @@ class CreateWelcomeCallsTable extends Migration
         Schema::create('welcome_calls', function (Blueprint $table) {
             $table->id();
             $table->foreignId('profile_id')->constrained()->onDelete('cascade');
-            $table->foreignId('employee_id')->nullable()->constrained('users')->onDelete('set null');
-            $table->string('status')->default('Pending'); // Interested, Follow-up Needed, No Response, Not Interested
-            $table->text('comment')->nullable();
-            $table->datetime('follow_up_date')->nullable();
+            $table->foreignId('user_id')->nullable()->constrained('users')->onDelete('set null');
+            $table->timestamp('call_time')->nullable();
+            $table->enum('status', ['Pending', 'Completed', 'Missed', 'Rescheduled'])->default('Pending');
+            $table->enum('outcome', ['Successful', 'No Answer', 'Follow-up Needed', 'Client Unreachable'])->nullable();
+            $table->text('notes')->nullable();
             $table->timestamps();
         });
     }

@@ -156,6 +156,16 @@ class Profile extends Model
         return $this->belongsTo(Religion::class);
     }
 
+     public function religionData()
+    {
+        return $this->belongsTo(Religion::class, 'religion');
+    }
+
+     public function casteData()
+    {
+        return $this->belongsTo(Community::class, 'caste');
+    }
+
     /**
      * Get the community associated with the profile.
      */

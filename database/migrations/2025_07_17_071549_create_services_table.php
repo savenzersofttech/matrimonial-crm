@@ -15,12 +15,13 @@ return new class extends Migration
         $table->id();
 
         $table->unsignedBigInteger('profile_id');  
-        $table->string('plan');                        
+        $table->string('plan_id');                        
         $table->date('start_date');
         $table->date('end_date');
         $table->enum('status', ['Active', 'Expiring Soon', 'Expired'])->default('Active');
         $table->string('remarks')->nullable(); 
         $table->integer('price')->nullable();
+        $table->char('currency', 3)->default('INR'); 
         $table->unsignedBigInteger('added_by')->nullable();  
         $table->unsignedBigInteger('updated_by')->nullable(); 
 

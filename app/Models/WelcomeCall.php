@@ -11,12 +11,17 @@ class WelcomeCall extends Model
 {
     use HasFactory;
 
-    protected $fillable = [
+     protected $fillable = [
         'profile_id',
-        'employee_id',
+        'user_id',
+        'call_time',
         'status',
-        'comment',
-        'follow_up_date',
+        'outcome',
+        'notes',
+    ];
+
+    protected $casts = [
+        'call_time' => 'datetime',
     ];
 
     public function profile()

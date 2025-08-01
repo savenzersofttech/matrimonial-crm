@@ -1,5 +1,13 @@
 @extends('layouts.sb2-layout')
 @section('title', 'View Profile')
+@php
+    $partner = optional($profile->partnerPreference);
+
+    function decodeAndImplode($json) {
+        $decoded = is_string($json) ? json_decode($json, true) : null;
+        return is_array($decoded) ? implode(', ', $decoded) : ($json ?? '-');
+    }
+@endphp
 
 @section('content')
 <main>
@@ -9,7 +17,7 @@
                 <div class="row align-items-center justify-content-between">
                     <div class="col-auto mt-4">
                         <h1 class="page-header-title">
-                            <div class="page-header-icon"><i data-feather="activity"></i></div>
+                            <div class="page-header-icon"></div>
                             Profile Details
                         </h1>
                     </div>
@@ -45,30 +53,28 @@
                             <p>Profile ID: <span class="text-muted">{{
                                     $profile->profile_id ?? '-' }}</span></p>
                         </div>
-                        
+
                         <div class="row mt-2">
-                        <div class="col-6">
-                            <div class="d-flex flex-wrap gap-2">
-                    
-                                @php
+                            <div class="col-6">
+                                <div class="d-flex flex-wrap gap-2">
+
+                                    @php
                                     $photos = json_decode($profile->photo, true);
                                     $firstPhoto = !empty($photos) && is_array($photos) ? $photos[0] : null;
-                                @endphp
-                    
-                                @if ($firstPhoto)
-                                    <div class="border p-1 rounded" style="width: 200px">
+                                    @endphp
+
+                                    @if ($firstPhoto)
+                                    <div class="border p-1 rounded" style="width: 40% ;">
                                         <img src="{{ asset('storage/' . $firstPhoto) }}" class="img-fluid" alt="Photo">
                                     </div>
-                                @else
+                                    @else
                                     <div class="avatar">
-                                        <img class="avatar-img img-fluid"
-                                            src="{{ asset('assets/sb2/assets/img/illustrations/profiles/profile-1.png') }}"
-                                            alt="No Photo">
+                                        <img class="avatar-img img-fluid" src="{{ asset('assets/sb2/assets/img/illustrations/profiles/profile-1.png') }}" alt="No Photo">
                                     </div>
-                                @endif
+                                    @endif
+                                </div>
                             </div>
                         </div>
-                    </div>
                         <!--Contact Information-->
                         <h5 class="mt-4">Contact Information</h5>
                         <div class="row row-cols-1 row-cols-md-2">
@@ -112,10 +118,19 @@
                                         $profile->gender ?? '-' }}</span></p>
                             </div>
                             <div class="col">
-                                <p>Date of Birth: <span class="text-muted">{{ $profile->date_of_birth ?
-                                        \Carbon\Carbon::parse($profile->date_of_birth)->format('d M Y') : '-' }}</span>
+                                <p>
+                                    Date of Birth:
+                                    <span class="text-muted">
+                                        @if ($profile->date_of_birth)
+                                            {{ \Carbon\Carbon::parse($profile->date_of_birth)->format('d M Y') }}
+                                            ({{ \Carbon\Carbon::parse($profile->date_of_birth)->age }} years old)
+                                        @else
+                                            -
+                                        @endif
+                                    </span>
                                 </p>
                             </div>
+
                             <div class="col">
                                 <p>Marital Status: <span class="text-muted">{{ $profile->marital_status
                                         ?? '-' }}</span></p>
@@ -207,8 +222,7 @@
                             <!-- Column 2: Government ID Status -->
                             <div class="col-6">
                                 <p class="mt-2">Government ID Status:
-                                    <span
-                                        class="badge {{ $profile->govt_id_status ? 'bg-success' : 'bg-warning' }} text-white">
+                                    <span class="badge {{ $profile->govt_id_status ? 'bg-success' : 'bg-warning' }} text-white">
                                         {{ $profile->govt_id_status ? 'Verified' : 'Non-Verified' }}
                                     </span>
                                 </p>
@@ -364,173 +378,116 @@
                         </div>
 
                         <!-- Basic Preferences -->
-                        <h3>Partner's Preferences</h5>
-                        <h5 class="">Basic Preferences</h5>
+                        <h3>Partner's Preferences</h3>
+
+                        <h5>Basic Preferences</h5>
                         <div class="row row-cols-1 row-cols-md-2">
                             <div class="col">
-                                <p>Minimum Age: <span class="text-muted">{{
-                                        $profile->partnerPreference->min_age ?? '-' }}</span></p>
+                                <p>Minimum Age: <span class="text-muted">{{ $partner->min_age ?? '-' }}</span></p>
                             </div>
                             <div class="col">
-                                <p>Maximum Age: <span class="text-muted">{{
-                                        $profile->partnerPreference->max_age ?? '-' }}</span></p>
+                                <p>Maximum Age: <span class="text-muted">{{ $partner->max_age ?? '-' }}</span></p>
                             </div>
                             <div class="col">
-                                <p>Minimum Height: <span class="text-muted">{{
-                                        $profile->partnerPreference->min_height ?? '-' }}</span></p>
+                                <p>Minimum Height: <span class="text-muted">{{ $partner->min_height ?? '-' }}</span></p>
                             </div>
                             <div class="col">
-                                <p>Maximum Height: <span class="text-muted">{{
-                                        $profile->partnerPreference->max_height ?? '-' }}</span></p>
+                                <p>Maximum Height: <span class="text-muted">{{ $partner->max_height ?? '-' }}</span></p>
                             </div>
                             <div class="col">
-                                <p>Marital Status: <span class="text-muted">{{
-                                        $profile->partnerPreference->marital_status ? (is_array($ms =
-                                        json_decode($profile->partnerPreference->marital_status, true)) ? implode(', ', $ms)
-                                        : $profile->partnerPreference->marital_status) : '-' }}</span></p>
+                                <p>Marital Status: <span class="text-muted">{{ decodeAndImplode($partner->marital_status) }}</span></p>
                             </div>
                             <div class="col">
-                                <p>Religion: <span class="text-muted">{{
-                                        $profile->partnerPreference->partner_religion ? (is_array($pr =
-                                        json_decode($profile->partnerPreference->partner_religion, true)) ? implode(', ',
-                                        $pr) : $profile->partnerPreference->partner_religion) : '-' }}</span></p>
+                                <p>Religion: <span class="text-muted">{{ decodeAndImplode($partner->partner_religion) }}</span></p>
                             </div>
                             <div class="col">
-                                <p>Caste: <span class="text-muted">{{
-                                        $profile->partnerPreference->partner_caste ? (is_array($pc =
-                                        json_decode($profile->partnerPreference->partner_caste, true)) ? implode(', ', $pc)
-                                        : $profile->partnerPreference->partner_caste) : '-' }}</span></p>
+                                <p>Caste: <span class="text-muted">{{ decodeAndImplode($partner->partner_caste) }}</span></p>
                             </div>
                             <div class="col">
-                                <p>Manglik Status: <span class="text-muted">{{
-                                        $profile->partnerPreference->manglik_status ? (is_array($ms =
-                                        json_decode($profile->partnerPreference->manglik_status, true)) ? implode(', ', $ms)
-                                        : $profile->partnerPreference->manglik_status) : '-' }}</span></p>
+                                <p>Manglik Status: <span class="text-muted">{{ decodeAndImplode($partner->manglik_status) }}</span></p>
                             </div>
                         </div>
 
-                        <!-- Location Preferences -->
-                        <h5 class="">Location Preferences</h5>
+                        <h5>Location Preferences</h5>
                         <div class="row row-cols-1 row-cols-md-2">
                             <div class="col">
-                                <p>Country: <span class="text-muted">{{
-                                        $profile->partnerPreference->country ? (is_array($pc =
-                                        json_decode($profile->partnerPreference->country, true)) ? implode(', ', $pc) :
-                                        $profile->partnerPreference->country) : '-' }}</span></p>
+                                <p>Country: <span class="text-muted">{{ decodeAndImplode($partner->country) }}</span></p>
                             </div>
                             <div class="col">
-                                <p>State: <span class="text-muted">{{ $profile->partnerPreference->state ?
-                                        (is_array($ps = json_decode($profile->partnerPreference->state, true)) ? implode(',
-                                        ', $ps) : $profile->partnerPreference->state) : '-' }}</span></p>
+                                <p>State: <span class="text-muted">{{ decodeAndImplode($partner->state) }}</span></p>
                             </div>
                             <div class="col">
-                                <p>City: <span class="text-muted">{{ $profile->partnerPreference->city ?
-                                        (is_array($pcity = json_decode($profile->partnerPreference->city, true)) ?
-                                        implode(', ', $pcity) : $profile->partnerPreference->city) : '-' }}</span></p>
+                                <p>City: <span class="text-muted">{{ decodeAndImplode($partner->city) }}</span></p>
                             </div>
                             <div class="col">
-                                <p>Citizenship: <span class="text-muted">{{
-                                        $profile->partnerPreference->citizenship ?? '-' }}</span></p>
+                                <p>Citizenship: <span class="text-muted">{{ $partner->citizenship ?? '-' }}</span></p>
                             </div>
                             <div class="col">
-                                <p>Country Grew Up: <span class="text-muted">{{
-                                        $profile->partnerPreference->grow_up_in ? (is_array($pgui =
-                                        json_decode($profile->partnerPreference->grow_up_in, true)) ? implode(', ', $pgui) :
-                                        $profile->partnerPreference->grow_up_in) : '-' }}</span></p>
+                                <p>Country Grew Up: <span class="text-muted">{{ decodeAndImplode($partner->grow_up_in) }}</span></p>
                             </div>
                         </div>
 
-                        <!-- Education & Career Preferences -->
-                        <h5 class="">Education & Career Preferences</h5>
+                        <h5>Education & Career Preferences</h5>
                         <div class="row row-cols-1 row-cols-md-2">
                             <div class="col">
-                                <p>Highest Qualification: <span class="text-muted">{{
-                                        $profile->partnerPreference->highest_qualification ? (is_array($phq =
-                                        json_decode($profile->partnerPreference->highest_qualification, true)) ? implode(',
-                                        ', $phq) : $profile->partnerPreference->highest_qualification) : '-' }}</span></p>
+                                <p>Highest Qualification: <span class="text-muted">{{ decodeAndImplode($partner->highest_qualification) }}</span></p>
                             </div>
                             <div class="col">
-                                <p>Education Field: <span class="text-muted">{{
-                                        $profile->partnerPreference->education_field ? (is_array($pef =
-                                        json_decode($profile->partnerPreference->education_field, true)) ? implode(', ',
-                                        $pef) : $profile->partnerPreference->education_field) : '-' }}</span></p>
+                                <p>Education Field: <span class="text-muted">{{ decodeAndImplode($partner->education_field) }}</span></p>
                             </div>
                             <div class="col">
-                                <p>Working With: <span class="text-muted">{{
-                                        $profile->partnerPreference->employer_name ? (is_array($pen =
-                                        json_decode($profile->partnerPreference->employer_name, true)) ? implode(', ', $pen)
-                                        : $profile->partnerPreference->employer_name) : '-' }}</span></p>
+                                <p>Working With: <span class="text-muted">{{ decodeAndImplode($partner->employer_name) }}</span></p>
                             </div>
                             <div class="col">
-                                <p>Profession: <span class="text-muted">{{
-                                        $profile->partnerPreference->profession ? (is_array($pprof =
-                                        json_decode($profile->partnerPreference->profession, true)) ? implode(', ', $pprof)
-                                        : $profile->partnerPreference->profession) : '-' }}</span></p>
+                                <p>Profession: <span class="text-muted">{{ decodeAndImplode($partner->profession) }}</span></p>
                             </div>
                             <div class="col">
-                                <p>Designation: <span class="text-muted">{{
-                                        $profile->partnerPreference->designation ?? '-' }}</span></p>
+                                <p>Designation: <span class="text-muted">{{ $partner->designation ?? '-' }}</span></p>
                             </div>
                             <div class="col">
-                                <p>Annual Income: <span class="text-muted">{{
-                                        $profile->partnerPreference->annual_income ? (is_array($pai =
-                                        json_decode($profile->partnerPreference->annual_income, true)) ? implode(', ', $pai)
-                                        : $profile->partnerPreference->annual_income) : '-' }}</span></p>
+                                <p>Annual Income: <span class="text-muted">{{ decodeAndImplode($partner->annual_income) }}</span></p>
                             </div>
                         </div>
 
-                        <!-- Lifestyle Preferences -->
-                        <h5 class="">Lifestyle Preferences</h5>
+                        <h5>Lifestyle Preferences</h5>
                         <div class="row row-cols-1 row-cols-md-2">
                             <div class="col">
-                                <p>Diet: <span class="text-muted">{{ $profile->partnerPreference->diet ?
-                                        (is_array($pdiet = json_decode($profile->partnerPreference->diet, true)) ?
-                                        implode(', ', $pdiet) : $profile->partnerPreference->diet) : '-' }}</span></p>
+                                <p>Diet: <span class="text-muted">{{ decodeAndImplode($partner->diet) }}</span></p>
                             </div>
                             <div class="col">
-                                <p>Drinking: <span class="text-muted">{{
-                                        $profile->partnerPreference->drinking_status ? (is_array($pdrink =
-                                        json_decode($profile->partnerPreference->drinking_status, true)) ? implode(', ',
-                                        $pdrink) : $profile->partnerPreference->drinking_status) : '-' }}</span></p>
+                                <p>Drinking: <span class="text-muted">{{ decodeAndImplode($partner->drinking_status) }}</span></p>
                             </div>
                             <div class="col">
-                                <p>Smoking: <span class="text-muted">{{
-                                        $profile->partnerPreference->smoking_status ? (is_array($psmoke =
-                                        json_decode($profile->partnerPreference->smoking_status, true)) ? implode(', ',
-                                        $psmoke) : $profile->partnerPreference->smoking_status) : '-' }}</span></p>
+                                <p>Smoking: <span class="text-muted">{{ decodeAndImplode($partner->smoking_status) }}</span></p>
                             </div>
                         </div>
+
                         <div class="col-12">
                             <p>About Your Partner Preference: <span class="text-muted">{{
                                     $profile->partnerPreference->about ?? '-' }}</span></p>
                         </div>
-                        
+
                         <h5 class="">Gallery</h5>
                         <div class="row mt-2">
                             <div class="col-12">
                                 @php
-                                    $photos = json_decode($profile->photo, true);
+                                $photos = json_decode($profile->photo, true);
                                 @endphp
-                        
+
                                 @if (!empty($photos) && is_array($photos))
-                                    <div class="row g-2">
-                                        @foreach ($photos as $img)
-                                            <div class="col-6 col-md-2"> {{-- 5 images per row on desktop --}}
-                                                <div class="border p-1 rounded text-center">
-                                                    <img src="{{ asset('storage/' . $img) }}" 
-                                                         class="img-fluid"
-                                                         alt="Photo"
-                                                         style="max-height: 280px; object-fit: cover;">
-                                                </div>
-                                            </div>
-                                        @endforeach
+                                <div class="row g-2">
+                                    @foreach ($photos as $img)
+                                    <div class="col-6 col-md-2"> {{-- 5 images per row on desktop --}}
+                                        <div class="border p-1 rounded text-center">
+                                            <img src="{{ asset('storage/' . $img) }}" class="img-fluid" alt="Photo" style="height: 280px; width: 100%; object-fit: cover;">
+                                        </div>
                                     </div>
+                                    @endforeach
+                                </div>
                                 @else
-                                    <div class="avatar text-center">
-                                        <img class="avatar-img img-fluid"
-                                             src="{{ asset('assets/sb2/assets/img/illustrations/profiles/profile-1.png') }}"
-                                             alt="No Photo">
-                                    </div>
+                                <div class="avatar text-center">
+                                    <img class="avatar-img img-fluid" src="{{ asset('assets/sb2/assets/img/illustrations/profiles/profile-1.png') }}" alt="No Photo">
+                                </div>
                                 @endif
                             </div>
                         </div>
@@ -604,6 +561,7 @@
     .badge {
         padding: 6px 12px;
     }
+
 </style>
 @endpush
 
@@ -612,6 +570,7 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     feather.replace();
+
 </script>
 @endpush
 
@@ -619,99 +578,99 @@
 
 
 
-        <!-- Contact Information Card -->
-        <!--<div class="col">-->
-        <!--    <div class="card shadow-sm">-->
-        <!--        <div class="card-header bg-primary text-white">-->
-        <!--            <h5 class="mb-0 text-white">Contact Information</h5>-->
-        <!--        </div>-->
-        <!--        <div class="card-body">-->
+<!-- Contact Information Card -->
+<!--<div class="col">-->
+<!--    <div class="card shadow-sm">-->
+<!--        <div class="card-header bg-primary text-white">-->
+<!--            <h5 class="mb-0 text-white">Contact Information</h5>-->
+<!--        </div>-->
+<!--        <div class="card-body">-->
 
-        <!--        </div>-->
-        <!--    </div>-->
-        <!--</div>-->
+<!--        </div>-->
+<!--    </div>-->
+<!--</div>-->
 
-        <!-- Client’s Basic Information Card -->
-        <!--<div class="col">-->
-        <!--    <div class="card shadow-sm">-->
-        <!--        <div class="card-header bg-primary text-white">-->
-        <!--            <h5 class="mb-0 text-white">Client’s Basic Information</h5>-->
-        <!--        </div>-->
-        <!--        <div class="card-body">-->
+<!-- Client’s Basic Information Card -->
+<!--<div class="col">-->
+<!--    <div class="card shadow-sm">-->
+<!--        <div class="card-header bg-primary text-white">-->
+<!--            <h5 class="mb-0 text-white">Client’s Basic Information</h5>-->
+<!--        </div>-->
+<!--        <div class="card-body">-->
 
-        <!--        </div>-->
-        <!--    </div>-->
-        <!--</div>-->
+<!--        </div>-->
+<!--    </div>-->
+<!--</div>-->
 
-        <!-- Religious Information Card -->
-        <!--<div class="col">-->
-        <!--    <div class="card shadow-sm">-->
-        <!--        <div class="card-header bg-primary text-white">-->
-        <!--            <h5 class="mb-0 text-white">Religious Information</h5>-->
-        <!--        </div>-->
-        <!--        <div class="card-body">-->
+<!-- Religious Information Card -->
+<!--<div class="col">-->
+<!--    <div class="card shadow-sm">-->
+<!--        <div class="card-header bg-primary text-white">-->
+<!--            <h5 class="mb-0 text-white">Religious Information</h5>-->
+<!--        </div>-->
+<!--        <div class="card-body">-->
 
-        <!--        </div>-->
-        <!--    </div>-->
-        <!--</div>-->
+<!--        </div>-->
+<!--    </div>-->
+<!--</div>-->
 
-        <!-- Horoscope Information Card -->
-        <!--<div class="col">-->
-        <!--    <div class="card shadow-sm">-->
-        <!--        <div class="card-header bg-primary text-white">-->
-        <!--            <h5 class="mb-0 text-white">Horoscope Information</h5>-->
-        <!--        </div>-->
-        <!--        <div class="card-body">-->
-        <!--            <div class="row row-cols-1 row-cols-md-3 g-3">-->
+<!-- Horoscope Information Card -->
+<!--<div class="col">-->
+<!--    <div class="card shadow-sm">-->
+<!--        <div class="card-header bg-primary text-white">-->
+<!--            <h5 class="mb-0 text-white">Horoscope Information</h5>-->
+<!--        </div>-->
+<!--        <div class="card-body">-->
+<!--            <div class="row row-cols-1 row-cols-md-3 g-3">-->
 
-        <!--            </div>-->
-        <!--        </div>-->
-        <!--    </div>-->
-        <!--</div>-->
+<!--            </div>-->
+<!--        </div>-->
+<!--    </div>-->
+<!--</div>-->
 
-        <!-- Educational & Career Information Card -->
-        <!--<div class="col">-->
-        <!--    <div class="card shadow-sm">-->
-        <!--        <div class="card-header bg-primary text-white">-->
-        <!--            <h5 class="mb-0 text-white">Educational & Career Information</h5>-->
-        <!--        </div>-->
-        <!--        <div class="card-body">-->
+<!-- Educational & Career Information Card -->
+<!--<div class="col">-->
+<!--    <div class="card shadow-sm">-->
+<!--        <div class="card-header bg-primary text-white">-->
+<!--            <h5 class="mb-0 text-white">Educational & Career Information</h5>-->
+<!--        </div>-->
+<!--        <div class="card-body">-->
 
-        <!--        </div>-->
-        <!--    </div>-->
-        <!--</div>-->
+<!--        </div>-->
+<!--    </div>-->
+<!--</div>-->
 
-        <!-- Lifestyle Information Card -->
-        <!--<div class="col">-->
-        <!--    <div class="card shadow-sm">-->
-        <!--        <div class="card-header bg-primary text-white">-->
-        <!--            <h5 class="mb-0 text-white">Lifestyle Information</h5>-->
-        <!--        </div>-->
-        <!--        <div class="card-body">-->
+<!-- Lifestyle Information Card -->
+<!--<div class="col">-->
+<!--    <div class="card shadow-sm">-->
+<!--        <div class="card-header bg-primary text-white">-->
+<!--            <h5 class="mb-0 text-white">Lifestyle Information</h5>-->
+<!--        </div>-->
+<!--        <div class="card-body">-->
 
-        <!--        </div>-->
-        <!--    </div>-->
-        <!--</div>-->
+<!--        </div>-->
+<!--    </div>-->
+<!--</div>-->
 
-        <!-- Family Information Card -->
-        <!--<div class="col">-->
-        <!--    <div class="card shadow-sm">-->
-        <!--        <div class="card-header bg-primary text-white">-->
-        <!--            <h5 class="mb-0 text-white">Family Information</h5>-->
-        <!--        </div>-->
-        <!--        <div class="card-body">-->
+<!-- Family Information Card -->
+<!--<div class="col">-->
+<!--    <div class="card shadow-sm">-->
+<!--        <div class="card-header bg-primary text-white">-->
+<!--            <h5 class="mb-0 text-white">Family Information</h5>-->
+<!--        </div>-->
+<!--        <div class="card-body">-->
 
-        <!--        </div>-->
-        <!--    </div>-->
-        <!--</div>-->
-        <!-- Partner Preference Card -->
-        <!--<div class="col">-->
-        <!--    <div class="card shadow-sm">-->
-        <!--        <div class="card-header bg-primary text-white">-->
-        <!--            <h5 class="mb-0 text-white">Partner Preference</h5>-->
-        <!--        </div>-->
-        <!--        <div class="card-body">-->
+<!--        </div>-->
+<!--    </div>-->
+<!--</div>-->
+<!-- Partner Preference Card -->
+<!--<div class="col">-->
+<!--    <div class="card shadow-sm">-->
+<!--        <div class="card-header bg-primary text-white">-->
+<!--            <h5 class="mb-0 text-white">Partner Preference</h5>-->
+<!--        </div>-->
+<!--        <div class="card-body">-->
 
-        <!--        </div>-->
-        <!--    </div>-->
-        <!--</div>-->
+<!--        </div>-->
+<!--    </div>-->
+<!--</div>-->

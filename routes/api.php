@@ -3,7 +3,10 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Services\Api\WelcomeCallApiController;
-use App\Http\Controllers\EmployeesController;
+use App\Http\Controllers\{
+    EmployeesController,
+    LocationController,
+};
 use App\Http\Controllers\Admin\SalesTargetController;
 use App\Http\Controllers\ {
     CustomerProfileController,
@@ -21,6 +24,14 @@ use App\Http\Controllers\Sales\{
     LeadActivityController,
 
 };
+
+
+// For API usage:    
+Route::get('/locations/countries', [LocationController::class, 'getCountries'])->name('getCountries.api');
+Route::get('api/locations/states', [LocationController::class, 'getStates'])->name('getStates.api');
+Route::get('/locations/cities/{state_id}', [LocationController::class, 'getCities'])->name('getCities.api');
+
+
 
 // Route::middleware(['auth'])->group(function () {
 

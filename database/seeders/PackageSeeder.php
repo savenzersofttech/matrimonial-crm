@@ -1,5 +1,4 @@
 <?php
-
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
@@ -11,26 +10,36 @@ class PackageSeeder extends Seeder
     public function run(): void
     {
         $plans = [
-            'Exclusive 1 month'   => 30,
-            'Exclusive 3 month'   => 90,
-            'Exclusive 6 month'   => 180,
-            'Elite 3 months'      => 90,
-            'Exclushiv 45 days'   => 45,
-            '1 year Exclusive'    => 365,
-            'Open duration'       => 0,
-            'Exclusive'           => 30,
+            ['name' => 'Exclusive 1 Month',   'days' => 30],
+            ['name' => 'Exclusive 3 Month',   'days' => 90],
+            ['name' => 'Exclusive 6 Month',   'days' => 180],
+            ['name' => 'Elite 3 Months',      'days' => 90],
+            ['name' => 'Exclushiv 45 Days',   'days' => 45],
+            ['name' => '1 Year Exclusive',    'days' => 365],
+            ['name' => 'Open Duration',       'days' => 0],
+            ['name' => 'Exclusive',           'days' => 30],
         ];
 
-        foreach ($plans as $name => $days) {
+        foreach ($plans as $plan) {
+            // INR version
             Package::create([
-                'name'          => $name,
-                'slug'          => Str::slug($name),
-                'duration_days' => $days,
-                'price'         => $days * 10, 
-                'type'          => str_contains(strtolower($name), 'elite') ? 'elite' : 'exclusive',
+                'name'           => $plan['name'] . ' (INR)',
+                'slug'           => Str::slug($plan['name'] . '-inr'),
+                'duration_days'  => $plan['days'],
+                'price'          => $plan['days'] * 10,
+                'currency'       => 'INR',
+                'type'           => str_contains(strtolower($plan['name']), 'elite') ? 'elite' : 'exclusive',
+            ]);
+
+            // USD version
+            Package::create([
+                'name'           => $plan['name'] . ' (USD)',
+                'slug'           => Str::slug($plan['name'] . '-usd'),
+                'duration_days'  => $plan['days'],
+                'price'          => round($plan['days'] * 0.15),
+                'currency'       => 'USD',
+                'type'           => str_contains(strtolower($plan['name']), 'elite') ? 'elite' : 'exclusive',
             ]);
         }
     }
 }
-
-
