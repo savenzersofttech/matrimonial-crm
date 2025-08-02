@@ -31,7 +31,7 @@
                         <thead class="thead-dark">
                             <tr>
                                 <th>#</th>
-                                <th>Plan Type</th>
+                                <   th>Plan Type</th>
                                 <th>Start Date</th>
                                 <th>End Date</th>
                                 <th>Status</th>

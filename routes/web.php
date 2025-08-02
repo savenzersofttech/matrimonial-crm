@@ -139,6 +139,9 @@ Route::middleware(['auth'])->prefix('sales')->name('sales.')->group(function () 
 Route::middleware(['auth'])->prefix('services')->name('services.')->group(function () {
     Route::get('/dashboard', [ServicesController::class, 'dashboard'])->name('dashboard');
     Route::resource('welcome-calls', WelcomeCallController::class);
+    //for show log of welcomecall
+    Route::post('/welcome-calls/log', [WelcomeCallController::class, 'historyLogs'])->name('welcome-calls.logs');
+
     Route::resource('services', OngoingServicesController::class);
     Route::get('/history/{id}', [OngoingServicesController::class, 'showHistory'])->name('services.history');
 
@@ -164,4 +167,11 @@ Route::middleware('auth')->group(function () {
 
 });
 
+
+
+//API ROUTES
+ //servies api
+    Route::post('services/welcome-calls/show-all', [WelcomeCallController::class, 'showAll'])->name('services.welcome-calls.showAll.api');
+
+    
 require __DIR__ . '/auth.php';

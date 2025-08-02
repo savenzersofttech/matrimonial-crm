@@ -6,8 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\Employee;
 use App\Models\Profile;
 use App\Models\WelcomeCall;
-use App\Models\FollowUpHistory;
-use App\Models\Service;
+use App\Models\WelcomeCallHistory;
 use App\Models\PaymentLink;
 use App\Models\Package;
 use App\Models\Lead;
@@ -23,8 +22,8 @@ class ServicesController extends Controller
 
     $totalProfiles = Profile::count();
     $totalWelcomeCalls = WelcomeCall::count();
-    $totalFollowUpHistories = FollowUpHistory::count();
-    $totalServices = Service::count();
+    $totalFollowUpHistories = WelcomeCallHistory::count();
+    $totalServices = 0;
     $totalPackages = Package::count();
     $totalLeads = Lead::count();
 

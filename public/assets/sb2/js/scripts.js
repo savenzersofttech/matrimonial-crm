@@ -151,7 +151,7 @@ function getStatusBadge(status) {
             break;
 
         case "pending":
-            badgeClass = "bg-secondary";
+            badgeClass = "bg-warning";
             break;
 
         case "hold":
@@ -257,3 +257,9 @@ $("#sisters").on("change", function () {
         $wrapper.removeClass("d-none");
     }
 });
+
+function truncateWords(text, wordLimit = 3 ) {
+    const words = text.trim().split(/\s+/);
+    if (words.length <= wordLimit) return text;
+    return words.slice(0, wordLimit).join(" ") + "...";
+}

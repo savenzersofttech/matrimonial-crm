@@ -37,6 +37,8 @@
                                 <th class="text-center">Name</th>
                                 <th class="text-center">Plan</th>
                                 <th class="text-center">Price</th>
+                                <th class="text-center">Discount</th>
+                                <th class="text-center">Amount</th>
                                 <th class="text-center">Status</th>
                                 <th class="text-center">Link Send at</th>
                                 <th class="text-center">Actions</th>
@@ -49,8 +51,8 @@
         </div>
     </div>
 
-    <!-- Add Payment Modal -->
-    <div class="modal fade" id="FormModalgx" tabindex="-1" aria-labelledby="FormModalgxLabel" aria-hidden="true">
+    <!-- Add/Edit  Modal -->
+    <div class="modal fade" id="FormModalgx" tabindex="-1" data-bs-backdrop="static" aria-labelledby="FormModalgxLabel" aria-hidden="true">
         <div class="modal-dialog">
             <form action="{{ route('services.payments.store') }}" id="regForm" callbackSuccessFn="closeModal" method="POST">
                 @csrf
@@ -78,6 +80,7 @@
                         <div class="mb-3">
                             <label for="plan_id" class="form-label required">Plan Name</label>
                             <select id="plan_id" class="form-select after-parent" name="plan_id" placeholder="Select Plan" required>
+                                <option value="" selected disabled>Select Plan</option>
                                 @foreach ($packages as $pkg)
                                 <option data-type="{{ $pkg->currency }}" data-price="{{ $pkg->price }}" value="{{ $pkg->id }}">
                                     {{ $pkg->name }} / 
@@ -156,30 +159,29 @@
 
 @push('scripts')
 <script>
-    let configration;
-    const updateUrl = @json(route('services.payments.update', ['payment' => '__ID__']));
-    document.addEventListener("DOMContentLoaded", function() {
-        validationConfig['ignore'] = [];
+   let configration;
+         const updateUrl = @json(route('services.payments.update', ['payment' => '__ID__']));
+         document.addEventListener("DOMContentLoaded", function () {
+            validationConfig['ignore'] = [];
 
-        let colDefs = [{
-                targets: 0
-                , className: 'text-center'
-                , orderable: false
-                , searchable: false
-                , width: '50px', // <-- minimum width
-                render: function(e, t, a, s) {
-                    return a.s_no;
-                }
-            }
-            , {
-                targets: -1
-                , title: "Actions"
-                , orderable: !1
-                , searchable: !1
-                , render: function(e, t, a, s) {
-                    console.log(e, t, a, s);
-                    tableData[a.id] = a; // Fix: Use a.id as the key directly
-                    return `
+            let colDefs = [{
+               targets: 0,
+               className: 'text-center',
+               orderable: false,
+               searchable: false,
+               width: '50px', // <-- minimum width
+               render: function (e, t, a, s) {
+                  return a.s_no;
+               }
+            }, {
+               targets: -1,
+               title: "Actions",
+               orderable: !1,
+               searchable: !1,
+               render: function (e, t, a, s) {
+                  console.log(e, t, a, s);
+                  tableData[a.id] = a; // Fix: Use a.id as the key directly
+                  return `
                         <button 
                             type="button"
                             data-id="index_${a.id}" 
@@ -199,130 +201,146 @@
                             title="Delete"><i class="far fa-trash-can"></i>
                         </button>
                         `;
-                }
-            , }
-        , ];
+               },
+            },
+        {
+        targets: '_all',  
+        className: 'text-start'
+    }
+ ];
 
-        configration = {
-            processing: true
-            , serverSide: true
-            , ajax: {
-                url: "{{ route('services.payments.showAll') }}"
-                , type: 'POST'
-            }
-            , columns: [{
-                    data: 's_no'
-                , },
+            configration = {
+               processing: true,
+               serverSide: true,
+               ajax: {
+                  url: "{{ route('services.payments.showAll') }}",
+                  type: 'POST'
+               },
+               columns: [{
+                     data: 's_no',
+                  },
 
-                {
-                    data: 'profile.name'
-                , }
-                , {
-                    data: 'package.name'
-                , }
-                , {
-                    data: 'final_amount'
-                }
-                , {
-                    data: 'status'
-                    , orderable: false
-                    , searchable: false
-                    , render: function(data, type, row) {
-                        return getStatusBadge(data);
+                  {
+                     data: 'profile.name',
+                  }, {
+                     data: 'package.name',
+                  }, {
+                     data: null,
+                     render: function (data, type, row) {
+                        return formatCurrency(row.price, row.currency);
+                     }
+                  },
+                  {
+                     data: null,
+                     width: '10px',
+                     render: function (data, type, row) {
+                        return row.discount ? row.discount + '%' : '0%';
+                     },
+                     title: 'Discount'
+                  },
+                  {
+                    data: 'final_amount',
+                    title: 'Final',
+                      width: '10px',
+                    render: function (data, type, row) {
+                                return `<span class="fw-bold text-dark">${formatCurrency(data, row.currency)}</span>`;
+
                     }
-                }
-                , {
-                    data: 'sent_at'
-                    , orderable: false
-                    , searchable: false
-                }
-                , {
-                    data: 'sent_at'
-                    , orderable: false
-                    , searchable: false
-                }
-            ]
-            , columnDefs: colDefs || []
-        , };
+                   }, {
+                     data: 'status',
+                     orderable: false,
+                     searchable: false,
+                     render: function (data, type, row) {
+                        return getStatusBadge(data);
+                     }
+                  }, {
+                     data: 'sent_at',
+                     orderable: false,
+                     searchable: false
+                  }, {
+                     data: 'sent_at',
+                     orderable: false,
+                     searchable: false
+                  }
+               ],
+               columnDefs: colDefs || [],
+            };
 
 
+            $('#plan_id').on('change', function () {
 
-
-        $('#plan_id').on('change', function() {
-           
-            const selectedOption = $(this).find('option:selected');
-            const price = selectedOption.data('price') || 0;
-            const currencyType = selectedOption.data('type') || 'INR';
-             console.log(price,currencyType);
-            $('#price').val(price);
-            $('#currency').val(currencyType);
-        });
-
-
-        $(regForm).validate(validationConfig);
-
-
-
-
-    });
-
-
-
-    function openAddModal() {
-        var FormModalgx = new bootstrap.Modal($('#FormModalgx')[0]);
-        var $form = $('#regForm');
-        $('#FormModalgxLabel').text('Create Payment Link');
-        $form.find('button[type="submit"]').text('Save');
-        $form.find('input[name="_method"]').remove();
-        // Set default status and hide it
-        $('#status').val('pending').closest('.mb-3').hide();
-        $form[0].reset();
-        $form.attr('action', "{{ route('services.payments.store') }}");
-        FormModalgx.show();
-    }
-
-
-    function openEditModal(id, element, event) {
-        event.preventDefault();
-        const payment = tableData[id]; // Fix: Use id directly as the key
-        console.log(payment, 'Payment Data:', `index_${id}`);
-        console.log(payment);
-        if (!payment) return;
-
-        var $form = $('#regForm');
-        $form[0].reset();
-
-        $form.attr('action', updateUrl.replace('__ID__', payment.id));
-        $form.attr('method', 'POST');
-        $('#FormModalgxLabel').text('Edit Payment Link');
-        $form.find('button[type="submit"]').text('Update');
-
-        let $methodInput = $form.find('input[name="_method"]');
-        if (!$methodInput.length) {
-            $methodInput = $('<input>', {
-                type: 'hidden'
-                , name: '_method'
+               const selectedOption = $(this).find('option:selected');
+               const price = selectedOption.data('price') || 0;
+               const currencyType = selectedOption.data('type') || 'INR';
+               console.log(price, currencyType);
+               $('#price').val(price);
+               $('#currency').val(currencyType);
             });
-            $form.append($methodInput);
-        }
-        $methodInput.val('PUT');
-
-        // Fill form values
-        document.querySelector('#profile_id').setValue(payment.profile_id); // if virtual select
-        $('#plan').val(payment.package.id);
-        $('#price').val(payment.price);
-        $('#discount').val(payment.discount);
-        $('#start_date').val(payment.start_date);
-        $('#end_date').val(payment.end_date);
 
 
-        // Show and set status
-        $('#status').val(payment.status).closest('.mb-3').show();
+            $(regForm).validate(validationConfig);
+
+
+         });
+
+
+         function openAddModal() {
+            var FormModalgx = new bootstrap.Modal($('#FormModalgx')[0]);
+            var $form = $('#regForm');
+            $('#FormModalgxLabel').text('Create Payment Link');
+            $form.find('button[type="submit"]').text('Save');
+            $form.find('input[name="_method"]').remove();
+            // Set default status and hide it
+            $('#status').val('pending').closest('.mb-3').hide();
+            $form[0].reset();
+            $form.attr('action', "{{ route('services.payments.store') }}");
+            FormModalgx.show();
+         }
+
+
+         function openEditModal(id, element, event) {
+            event.preventDefault();
+            const payment = tableData[id]; // Fix: Use id directly as the key
+            console.log(payment, 'Payment Data:', `index_${id}`);
+            console.log(payment);
+            if (!payment) return;
+
+            var $form = $('#regForm');
+            $form[0].reset();
+
+            $form.attr('action', updateUrl.replace('__ID__', payment.id));
+            $form.attr('method', 'POST');
+            $('#FormModalgxLabel').text('Edit Payment Link');
+            $form.find('button[type="submit"]').text('Update');
+
+            let $methodInput = $form.find('input[name="_method"]');
+            if (!$methodInput.length) {
+               $methodInput = $('<input>', {
+                  type: 'hidden',
+                  name: '_method'
+               });
+               $form.append($methodInput);
+            }
+            $methodInput.val('PUT');
+
+            // Fill form values
+            document.querySelector('#profile_id').setValue(payment.profile_id); // if virtual select
+            $('#plan_id').val(payment.package.id);
+            $('#price').val(payment.price);
+            $('#discount').val(payment.discount);
+            $('#start_date').val(payment.start_date);
+            $('#end_date').val(payment.end_date);
+            $('#currency').val(payment.currency);
 
 
 
-        new bootstrap.Modal($('#FormModalgx')[0]).show();
-    }
+            // Show and set status
+            $('#status').val(payment.status).closest('.mb-3').show();
+
+
+            new bootstrap.Modal($('#FormModalgx')[0]).show();
+         }
+
 
 </script>
 @endpush
