@@ -1,7 +1,5 @@
 <?php
 
-// app/Models/WelcomeCall.php
-
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
@@ -13,11 +11,39 @@ class WelcomeCall extends Model
 
     protected $fillable = [
         'profile_id',
-        'employee_id',
+        'payment_link_id',
+        'user_id',
+        'call_time',
         'status',
-        'comment',
-        'follow_up_date',
+        'outcome',
+        'notes',
     ];
+
+    // protected static function booted()
+    // {
+    //     static::created(function ($call) {
+    //         $call->saveHistory();
+    //     });
+
+    //     static::updated(function ($call) {
+    //         if ($call->isDirty()) {
+    //             $call->saveHistory();
+    //         }
+    //     });
+    // }
+
+    // public function saveHistory()
+    // {
+    //     \App\Models\WelcomeCallHistory::create([
+    //         'welcome_call_id' => $this->id,
+    //         'profile_id'      => $this->profile_id,
+    //         'user_id'         => $this->user_id,
+    //         'call_time'       => $this->call_time,
+    //         'status'          => $this->status,
+    //         'outcome'         => $this->outcome,
+    //         'notes'           => $this->notes,
+    //     ]);
+    // }
 
     public function profile()
     {
@@ -26,7 +52,7 @@ class WelcomeCall extends Model
 
     public function employee()
     {
-        return $this->belongsTo(User::class, 'employee_id');
+        return $this->belongsTo(User::class, 'user_id');
     }
 
     public function profileAssignment()
@@ -34,9 +60,8 @@ class WelcomeCall extends Model
         return $this->hasOne(ProfileEmployeeAssignment::class, 'profile_id', 'profile_id');
     }
 
-    public function followUpHistories()
+    public function history()
     {
-        return $this->hasMany(FollowUpHistory::class, 'welcome_call_id');
+        return $this->hasMany(WelcomeCallHistory::class, 'welcome_call_id');
     }
-
 }

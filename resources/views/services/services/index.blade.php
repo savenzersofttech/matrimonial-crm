@@ -49,8 +49,10 @@
                             <th>Profile</th>
                             <th>Plan</th>
                             <th>Price</th>
-                            <th>Start Date</th>
-                            <th>End Date</th>
+                            <th>Discount</th>
+                            <th>Payable</th>
+                            <th>Period</th>
+                            <th>Expire In</th>
                             <th>Status</th>
                             <th>Added By</th>
                             <th>Updated By</th>
@@ -59,43 +61,78 @@
                     </thead>
                     <tbody>
                         @forelse($services as $index => $service)
+                          @php
+                            
+                            $start = \Carbon\Carbon::parse($service->start_date);
+                            $end = \Carbon\Carbon::parse($service->end_date);
+                            $today = now();
+                            $isActive = "Expired";
+                                if ($today->lt($start)) {
+                                    $isActive = 'Upcoming'; 
+                                } elseif ($today->between($start, $end)) {
+                                    $isActive = 'Active'; 
+                                } else {
+                                    $isActive = 'Expired'; 
+                                }
+
+                            $diff = $end->diffInDays($today, false); // false = signed (future = negative)
+                            $days = round(abs($diff));
+
+                            if ($diff < 0) {
+                                $expiryText = "$days days";
+                                $textClass = 'success';
+                            } elseif ($diff === 0) {
+                                $expiryText = 'Expires today';
+                                $textClass = 'warning';
+                            } else {
+                                $expiryText = "$days days ago";
+                                $textClass = 'danger';
+                            }
+                        @endphp
+
                         <tr>
                             <td>{{ $index + 1 }}</td>
-                            <td>{{ $service->profile->name ?? 'N/A' }}</td>
-                            <td>{{ $service->plan }}</td>
-                            <td>₹{{ $service->price }}</td>
-                            <td>{{ \Carbon\Carbon::parse($service->start_date)->format('d-m-Y') }}</td>
-                            <td>{{ \Carbon\Carbon::parse($service->end_date)->format('d-m-Y') }}</td>
+                            <td><a target="_blank" href="{{ route('admin.profiles.show', $service->profile->id) }}" class="fw-bold text-blue">{{ $service->profile->name}}</a></td>
+                            <td>{{ $service->package->name }}</td>
+                            <td>{{ getCurrencySymbol($service->currency) }}{{ $service->price }}</td>
+                            <td>{{ $service->discount ?? 0 }}%</td>
+                            <td><p class="fw-bold text-dark">{{ getCurrencySymbol($service->currency) }}{{ $service->final_amount }}</p></td>
+
+
+                         
+
                             <td>
-                                <span class="badge bg-{{ getStatusClass($service->status) }}">{{ $service->status }}</span>
+                                <div>{{ $start->format('d-m-Y') }}</br> {{ $end->format('d-m-Y') }}</div>
+                             
                             </td>
-                            <td>{{ $service->addedBy->name ?? '-' }}</td>
-                            <td>{{ $service->updatedBy->name ?? '-' }}</td>
                             <td>
-                                <a href="{{ route('services.services.history', $service->id) }}" class="btn btn-sm ">
-                                    <i class="fa-solid fa-eye"></i>
+                                <span class="badge bg-{{ $textClass }}">{{ $expiryText }}</span>
+                            </td>
+
+                            <td>
+                                <span class="badge bg-{{ getStatusClass($isActive) }}">{{ $isActive }}</span>
+                            </td>
+                            <td>-</td>
+                            <td>-</td>
+                            <td>
+                                <a href="#" class="btn btn-sm btn-{{ getStatusClass($isActive) }} ">
+                                    @if($isActive == 'Expired')
+                                        <i class="fa fa-refresh me-1"></i> Renew
+                                    @else
+                                    <i class="fa fa-lock me-1"></i> Lock
+                                    @endif
                                 </a>
-                                <a href="{{ route('services.services.edit', $service->id) }}" class="btn btn-sm ">
-                                    <i class="fa-solid fa-pen-to-square"></i>
-                                </a>
-                                <form action="{{ route('services.services.destroy', $service->id) }}" method="POST" style="display:inline">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" onclick="return confirm('Are you sure?')" class="btn btn-sm ">
-                                        <i class="fa-regular fa-trash-can"></i>
-                                    </button>
-                                </form>
                             </td>
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="9" class="text-center">No ongoing services found.</td>
+                            <td colspan="10" class="text-center">No ongoing services found.</td>
                         </tr>
                         @endforelse
                     </tbody>
                 </table>
                 <div class="mt-3">
-                    {{ $services->links() }}
+                   
                 </div>
             </div>
         </div>
@@ -103,17 +140,7 @@
 </main>
 @endsection
 
-@php
-function getStatusClass($status)
-{
-    return match ($status) {
-        'Active' => 'success',
-        'Expiring Soon' => 'warning',
-        'Expired' => 'danger',
-        default => 'secondary',
-    };
-}
-@endphp
+
 
 @push('scripts')
 <script>

@@ -37,6 +37,7 @@ class CreateProfilesTable extends Migration
             $table->string('citizenship')->nullable();
             $table->json('grow_up_in')->nullable();
             $table->json('government_id')->nullable();
+            $table->text('govt_id_status')->nullable();
             $table->json('photo')->nullable();
             $table->string('password')->nullable();
             $table->text('bio')->nullable();

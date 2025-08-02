@@ -1,34 +1,32 @@
 <?php
-
 namespace App\Http\Controllers\Services;
 
 use App\Http\Controllers\Controller;
+use App\Models\ProfileEmployeeAssignment;
 use App\Models\WelcomeCall;
-use App\Models\Profile;
-use App\Models\User;
+use App\Models\WelcomeCallHistory;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use App\Models\FollowUpHistory;
-use App\Models\ProfileEmployeeAssignment;
-use Illuminate\Support\Facades\Validator;
-use App\Helpers\ApiResponse;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class WelcomeCallController extends Controller
 {
-   
-     public function showAll(Request $request)
+
+        //uisng PaymentLink Model to Create and Del recoreds in welcome call/ welcome call log create form here
+    
+    public function showAll(Request $request)
     {
         $dbColumns = (new WelcomeCall())->getFillable();
-        $order = $request->post('order');
-        $start = $request->post('start') ?? 0;
-        $length = $request->post('length') ?? 10;
-        $search = $request->post('search')['value'] ?? null;
+        $order     = $request->post('order');
+        $start     = $request->post('start') ?? 0;
+        $length    = $request->post('length') ?? 10;
+        $search    = $request->post('search')['value'] ?? null;
 
         // $query = Lead::selectRaw('*')->with(['profile:id,name,email,phone_number']);
         $query = WelcomeCall::with([
-            'profile:id,name,email,phone_number,profile_source_id,profile_source_comment'
+            'profile:id,name,email,phone_number,profile_source_id,profile_source_comment',
+            'employee:id,name',
         ]);
 
         // Search filter
@@ -46,9 +44,9 @@ class WelcomeCallController extends Controller
 
         // Order
         if (isset($order[0]['dir'])) {
-            $dir = $order[0]['dir'];
+            $dir      = $order[0]['dir'];
             $colIndex = $order[0]['column'] ?? false;
-            $col = $dbColumns[$colIndex] ?? false;
+            $col      = $dbColumns[$colIndex] ?? false;
             if ($col) {
                 $query->orderBy($col, $dir);
             }
@@ -75,10 +73,10 @@ class WelcomeCallController extends Controller
         $draw = $request->post('draw');
 
         $response = [
-            'draw' => intval($draw),
-            'recordsTotal' => intval($recordsTotal),
+            'draw'            => intval($draw),
+            'recordsTotal'    => intval($recordsTotal),
             'recordsFiltered' => intval($recordsFiltered),
-            'data' => $data,
+            'data'            => $data,
         ];
 
         return response()->json($response);
@@ -86,106 +84,99 @@ class WelcomeCallController extends Controller
 
     public function index()
     {
-        $employeeId = Auth::id();
+        $employeeId       = Auth::id();
         $assignProfileIds = ProfileEmployeeAssignment::where('employee_id', $employeeId)->pluck('profile_id');
-        $calls = WelcomeCall::with(['profile:id,name,email,phone_number', 'profileAssignment.assignedBy', 'followUpHistories' => function ($query) {
+        $calls            = WelcomeCall::with(['profile:id,name,email,phone_number', 'profileAssignment.assignedBy', 'followUpHistories' => function ($query) {
             $query->latest('follow_up_date')->first(); // Works with datetime
         }])
-        ->whereIn('profile_id', $assignProfileIds)
-        ->get();
+            ->whereIn('profile_id', $assignProfileIds)
+            ->get();
         // dd($calls->toArray());
         return view('services.welcome-calls.index', compact('calls'));
     }
 
-    public function create()
-    {
-        $profiles = Profile::all();
-        $employees = User::whereNotIn('role', ['admin', 'super-admin'])->get();
-        return view('welcome-calls.create', compact('profiles', 'employees'));
-    }
-
-    
-
     public function store(Request $request)
     {
-        $request->validate([
-            'profile_id' => 'required|exists:profiles,id',
-            'employee_id' => 'nullable|exists:users,id',
-            'status' => 'required|string',
-            'comment' => 'nullable|string',
-            'follow_up_date' => 'nullable|date',
-        ]);
-        
-        WelcomeCall::create($request->all());
-        return redirect()->route('services.welcome-calls.index')->with('success', 'Welcome Call created.');
+
+        try {
+            $validated = $request->validate([
+                'welcome_call_id' => 'required|exists:welcome_calls,id',
+                'profile_id'      => 'required|exists:profiles,id',
+                'status'          => 'required|string|in:New,Pending,Completed,Missed,Rescheduled',
+                'outcome'         => 'required|string|in:Successfull,No Answer,Follow-up Needed,Client Unreachable',
+                'call_time'       => 'nullable|date', // corrected 'timedate' to 'date'
+                'notes'           => 'nullable|string',
+            ]);
+
+            $welcomeCall = WelcomeCall::findOrFail($validated['welcome_call_id']);
+            $welcomeCall->update([
+                'status'    => $validated['status'],
+                'outcome'   => $validated['outcome'],
+                'call_time' => $validated['call_time'],
+                'notes'     => $validated['notes'],
+            ]);
+
+            $history = WelcomeCallHistory::create([
+                'welcome_call_id' => $validated['welcome_call_id'],
+                'profile_id'      => $validated['profile_id'],
+                'status'          => $validated['status'],
+                'outcome'         => $validated['outcome'],
+                'call_time'       => $validated['call_time'],
+                'notes'           => $validated['notes'],
+            ]);
+
+            return response()->json([
+                'success'     => 'Welcome call log successfully.',
+                'tableReload' => true,
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'error'   => 'An error occurred while deleting the payment link.',
+                'message' => $e->getMessage(),
+            ], 500);
+        }
     }
 
-    public function show(WelcomeCall $welcomeCall)
+    public function historyLogs(Request $request)
     {
-        $welcomeCall->load('profile', 'followUpHistories.employee'); // Eager load profile and follow-up histories with employee
-        return view('services.welcome-calls.show', compact('welcomeCall'));
+        try {
+            $validated = $request->validate([
+                'welcome_call_id' => 'required|exists:welcome_calls,id',
+            ]);
+
+            $histories = WelcomeCallHistory::where('welcome_call_id', $validated['welcome_call_id'])
+                ->orderByDesc('created_at')
+                ->get()
+                ->map(function ($log, $index) {
+                    return [
+                        's_no'       => $index + 1,
+                        'status'     => $log->status,
+                        'outcome'    => $log->outcome,
+                        'call_time'  => $log->call_time ? \Carbon\Carbon::parse($log->call_time)->format('d/m/Y h:i A') : '-',
+                        'notes'      => $log->notes ?? '-',
+                        'created_at' => $log->created_at->format('d/m/Y h:i A'),
+                    ];
+                });
+
+            return response()->json([
+                'success' => true,
+                'data'    => $histories,
+            ]);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed.',
+                'errors'  => $e->errors(),
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Something went wrong.',
+                'error'   => $e->getMessage(),
+            ], 500);
+        }
+
     }
 
-    public function edit(WelcomeCall $welcomeCall)
-    {
-        $profiles = Profile::all();
-        $employees = User::whereNotIn('role', ['admin', 'super-admin'])->get();
-        $welcomeCall->load('followUpHistories.employee'); // Load all follow-up histories with employee
-        return view('services.welcome-calls.edit', compact('welcomeCall', 'profiles', 'employees'));
-    }
-
- public function update(Request $request, WelcomeCall $welcomeCall)
-{
-    $request->merge([
-    'follow_up_date' => str_replace('T', ' ', $request->follow_up_date)
-    ]);
-    $profileId = $welcomeCall->profile->id ?? null;
-
-    $validator = Validator::make($request->all(), [
-    'name' => 'required|string',
-    'phone_code' => 'required|string',
-      'email' => 'nullable|email|unique:profiles,email,' . $profileId,
-    'phone_number' => 'nullable|unique:profiles,phone_number,' . $profileId,
-    'status' => 'required|string',
-    'follow_up_date' => 'nullable|date_format:Y-m-d H:i',
-    'comment' => 'nullable|string',
-    ]);
-
-    if ($validator->fails()) {
-        return ApiResponse::error('Validation failed.', $validator->errors(), 422);
-    }
-
-    try {
-
-        // Update related Profile if exists
-        if ($welcomeCall->profile) {
-    $welcomeCall->profile->update([
-        'name' => Str::ucfirst($request->name),
-        'phone_number' =>$request->phone_code . "-" .  $request->phone_number,
-        'email' => $request->email,
-    ]);
-}
-        FollowUpHistory::create([
-            'welcome_call_id' => $welcomeCall->id,
-            'employee_id' => auth()->id(),
-            'follow_up_date' => $request->follow_up_date,
-            'status' => $request->status,
-            'comment' => $request->comment,
-        ]);
-
-        $welcomeCall->update($request->only(['status', 'comment', 'follow_up_date']));
-
-        return ApiResponse::success('Welcome Call updated successfully.');
-    } catch (\Exception $e) {
-        return ApiResponse::error('Server error.', ['exception' => $e->getMessage()], 500);
-    }
-}
-
-    public function destroy(WelcomeCall $welcomeCall)
-    {
-        $welcomeCall->delete();
-        return redirect()->route('services.welcome-calls.index')->with('success', 'Deleted.');
-    }
-
-   
 }

@@ -1086,8 +1086,8 @@
 
 
             // Load countries
-            $.get("https://countriesnow.space/api/v0.1/countries/positions", function(data) {
-                const countries = data.data.map(c => ({
+            $.get("{{ route('getCountries.api') }}", function(data) {
+                const countries =  data.map(c => ({
                     label: c.name,
                     value: c.name
                 }));
@@ -1154,14 +1154,14 @@
                 document.querySelector('#city').reset();
 
                 $.ajax({
-                    url: "https://countriesnow.space/api/v0.1/countries/states",
-                    method: "POST",
+                    url: "{{ route('getStates.api') }}",
+                    method: "GET",
                     contentType: "application/json",
                     data: JSON.stringify({
                         country
                     }),
                     success: function(res) {
-                        const states = res.data.states.map(s => ({
+                        const states = res.map(s => ({
                             label: s.name,
                             value: s.name
                         }));

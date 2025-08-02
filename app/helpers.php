@@ -422,3 +422,47 @@ if (!function_exists('leadsOption')) {
     }
 }
 
+
+function getStatusClass($status)
+{
+    $normalized = strtolower(trim($status));
+
+    return match ($normalized) {
+        'upcoming'           => 'primary',
+        'active'           => 'success',
+        'expired'           => 'danger',
+        'new'               => 'primary',
+        'contacted'         => 'info',
+        'follow up',        => 'info',
+        'follow-up needed' => 'warning',
+        'qualified'         => 'teal',    
+        'converted'         => 'success',
+        'interested'        => 'indigo',  
+        'active'            => 'success',
+        'completed'         => 'success',
+        'not interested'    => 'dark',
+        'no response'       => 'warning',
+        'lost'              => 'danger',
+        'failed'            => 'red',      
+        'expired'           => 'light',
+        'pending'           => 'warning',
+        'hold'              => 'orange',   
+        'call'              => 'primary',
+        'email'             => 'info',
+        'proposal'          => 'warning',
+        'meeting'           => 'success',
+        'paid'              => 'success',
+        'unpaid'            => 'danger',
+        'cancelled',         => 'red',      
+        'canceled'          => 'dark',
+        default             => 'dark',
+    };
+}
+
+    function getCurrencySymbol($currency) {
+        return match (strtoupper($currency)) {
+            'INR' => '₹',
+            'USD' => '$',
+            default => '₹', 
+        };
+    }

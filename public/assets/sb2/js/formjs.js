@@ -682,3 +682,12 @@ const validationConfig = {
         }
     },
 };
+
+function formatCurrency(amount, currency) {
+    if (!amount) return '';
+    switch (currency.toUpperCase()) {
+        case 'INR': return '₹' + parseFloat(amount).toFixed(2);
+        case 'USD': return '$' + parseFloat(amount).toFixed(2);
+        default: return parseFloat(amount).toFixed(2) + ' ' + currency;
+    }
+}

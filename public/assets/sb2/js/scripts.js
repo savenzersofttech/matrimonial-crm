@@ -86,7 +86,7 @@ window.addEventListener("DOMContentLoaded", (event) => {
 /*! * custom scripts for this template */
 
 function getStatusBadge(status) {
-    if (!status) return "";
+    if (!status || typeof status !== 'string') return "";
 
     const normalized = status.trim().toLowerCase();
     let badgeClass = "bg-secondary";
@@ -102,13 +102,14 @@ function getStatusBadge(status) {
             break;
 
         case "follow up":
+        case "follow-up":
         case "follow-up needed":
             badgeClass = "bg-warning";
             textColor = "text-dark";
             break;
 
         case "qualified":
-            badgeClass = "bg-teal"; // Custom
+            badgeClass = "bg-teal"; // Custom teal class
             break;
 
         case "converted":
@@ -116,7 +117,7 @@ function getStatusBadge(status) {
             break;
 
         case "interested":
-            badgeClass = "bg-indigo"; // Custom
+            badgeClass = "bg-indigo"; // Custom indigo class
             break;
 
         case "active":
@@ -132,16 +133,16 @@ function getStatusBadge(status) {
             break;
 
         case "no response":
-            badgeClass = "bg-warning"; // Orange-ish
+            badgeClass = "bg-warning";
             textColor = "text-dark";
             break;
 
         case "lost":
-            badgeClass = "bg-danger"; // Red
+            badgeClass = "bg-danger";
             break;
 
         case "failed":
-            badgeClass = "bg-secondary"; // Grey
+            badgeClass = "bg-red";
             break;
 
         case "expired":
@@ -150,40 +151,56 @@ function getStatusBadge(status) {
             break;
 
         case "pending":
-            badgeClass = "bg-secondary";
+            badgeClass = "bg-warning";
             break;
 
         case "hold":
-            badgeClass = "bg-orange";
+            badgeClass = "bg-orange"; // Custom orange class (add in your CSS)
             break;
 
         case "call":
-            badgeClass = "bg-primary"; 
-        case "email":
-            badgeClass = "bg-info"; 
-            break;
-        case "proposal":
-            badgeClass = "bg-warning"; 
-            break;
-        case "meeting":
-            badgeClass = "bg-success"; 
-            break;
-        case "paid":
-            badgeClass = "bg-success"; 
+            badgeClass = "bg-primary";
             break;
 
+        case "email":
+            badgeClass = "bg-info";
+            break;
+
+        case "proposal":
+            badgeClass = "bg-warning";
+            textColor = "text-dark";
+            break;
+
+        case "meeting":
+            badgeClass = "bg-success";
+            break;
+
+        case "paid":
+            badgeClass = "bg-success";
+            break;
+
+        case "unpaid":
+            badgeClass = "bg-danger";
+            break;
+
+        case "cancelled":
+        case "canceled":
+            badgeClass = "bg-dark";
+            break;
 
         default:
             badgeClass = "bg-dark";
+            textColor = "text-white";
     }
 
-    const displayText = status.replace(
-        /\w\S*/g,
-        (w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()
-    );
+    const displayText = status
+        .trim()
+        .toLowerCase()
+        .replace(/\w\S*/g, (w) => w.charAt(0).toUpperCase() + w.slice(1));
 
     return `<div class="text-start"><span class="badge ${badgeClass} ${textColor} rounded-pill">${displayText}</span></div>`;
 }
+
 
 // Initialize VirtalSelect
 $virtualSelect = VirtualSelect.init({
@@ -240,3 +257,9 @@ $("#sisters").on("change", function () {
         $wrapper.removeClass("d-none");
     }
 });
+
+function truncateWords(text, wordLimit = 3 ) {
+    const words = text.trim().split(/\s+/);
+    if (words.length <= wordLimit) return text;
+    return words.slice(0, wordLimit).join(" ") + "...";
+}
