@@ -161,29 +161,30 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     Route::get('/profile', [ProfileController::class, 'view'])->name('profile.view');
     
-    Route::get('//users/{users}/profile', [ProfileController::class, 'profile'])->name('profile.edit');
-    Route::get('/profile/{profile}/edit', [UserController::class, 'edit'])->name('user_management.users.edit');
-    Route::post('/user_management/users/{user}', [UserController::class, 'update'])->name('user_management.users.update');
-    Route::delete('/user_management/users/{user}/destroy', [UserController::class, 'destroy'])->name('user_management.users.destroy');
+    // Route::get('//users/{users}/profile', [ProfileController::class, 'profile'])->name('profile.edit');
+    // Route::get('/profile/{profile}/edit', [UserController::class, 'edit'])->name('user_management.users.edit');
+    // Route::post('/user_management/users/{user}', [UserController::class, 'update'])->name('user_management.users.update');
+    // Route::delete('/user_management/users/{user}/destroy', [UserController::class, 'destroy'])->name('user_management.users.destroy');
 
 });
 
-Route::prefix('paypal')->name('paypal.')->group(function () {
-    Route::post('/create-order', [PaypalController::class, 'createOrder'])->name('create');
-    Route::get('/success', [PaypalController::class, 'capture'])->name('success');
-    Route::get('/cancel', [PaypalController::class, 'cancel'])->name('cancel');
-});
 
 
-Route::prefix('paypal')->name('paypal.')->group(function () {
-    Route::get('/payment/success', [PaypalController::class, 'paymentSuccess'])->name('payment.success');
-    Route::get('/payment/cancel', [PaypalController::class, 'paymentCancel'])->name('payment.cancel');
-    Route::get('/payment/failed', [PaypalController::class, 'paymentFailed'])->name('payment.failed');
-});
 
 
-Route::get('/paypal/create', [PayPalController::class, 'createTransaction'])->name('paypal.create');
-Route::get('/pay-payment/{token}', [PaypalController::class, 'showPaymentPage'])->name('paypal.payment.page');
+
+// Payment Page
+Route::get('/pay-paypal/{token}', [PaypalController::class, 'showPaymentPage'])->name('paypal.payment.page');
+Route::get('/pay-razorpay/{token}', [PaypalController::class, 'showPaymentPage'])->name('razorpay.payment.page');
+
+// Create PayPal Order
+Route::get('/paypal/create-order/{token}', [PaypalController::class, 'createOrder'])->name('paypal.create.order');
+
+// PayPal Callbacks
+Route::get('/paypal/success', [PaypalController::class, 'paymentSuccess'])->name('paypal.payment.success');
+Route::get('/paypal/cancel', [PaypalController::class, 'paymentCancel'])->name('paypal.payment.cancel');
+Route::get('/paypal/failed', [PaypalController::class, 'paymentFailed'])->name('paypal.payment.failed');
+
 
 
 

@@ -1,10 +1,11 @@
 <?php
 namespace App\Http\Controllers;
 
+use App\Models\PaymentLink;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Srmklive\PayPal\Services\PayPal as PayPalClient;
-use App\Models\PaymentLink;
 
 class PaypalController extends Controller
 {
@@ -14,23 +15,29 @@ class PaypalController extends Controller
 
     public function __construct()
     {
-        $mode           = config('services.paypal.mode', 'sandbox');
+        $mode = config('services.paypal.mode', 'sandbox');
+
         $this->clientId = config("services.paypal.{$mode}.client_id");
         $this->secret   = config("services.paypal.{$mode}.secret");
+
+        if (! $this->clientId || ! $this->secret) {
+            abort(500, 'PayPal credentials not set in config/services.php');
+        }
 
         $this->baseUrl = $mode === 'live'
         ? 'https://api-m.paypal.com'
         : 'https://api-m.sandbox.paypal.com';
     }
 
-
-        public function showPaymentPage($token)
-        {
+    public function showPaymentPage($token)
+    {
+        try {
             $paymentLink = PaymentLink::with(['profile', 'package'])->where('token', $token)->firstOrFail();
-
             return view('payment.paypal.preview', compact('paymentLink'));
+        } catch (ModelNotFoundException $e) {
+            return abort(404, 'Payment link not found or expired.');
         }
-
+    }
 
     protected function getAccessToken()
     {
@@ -43,123 +50,99 @@ class PaypalController extends Controller
         if ($response->failed()) {
             abort(500, 'Unable to authenticate with PayPal.');
         }
-        dd($response);
+
         return $response->json()['access_token'];
     }
 
-    public function createOrder(Request $request)
+    public function createOrder($token)
     {
+        $paymentLink = PaymentLink::where('token', $token)->firstOrFail();
+        $amount      = number_format($paymentLink->final_amount, 2, '.', '');
         $accessToken = $this->getAccessToken();
 
-        $response = Http::withToken($accessToken)
-            ->post("{$this->baseUrl}/v2/checkout/orders", [
-                'intent'              => 'CAPTURE',
-                'purchase_units'      => [[
-                    'amount' => [
-                        'currency_code' => 'USD',
-                        'value'         => $request->amount ?? '10.00',
-                    ],
-                ]],
-                'application_context' => [
-                    'return_url' => route('paypal.success'),
-                    'cancel_url' => route('paypal.cancel'),
+        $response = Http::withToken($accessToken)->post("{$this->baseUrl}/v2/checkout/orders", [
+            'intent'              => 'CAPTURE',
+            'purchase_units'      => [[
+                'amount' => [
+                    'currency_code' => $paymentLink->currency ?? 'USD',
+                    'value'         => $amount,
                 ],
-            ]);
+            ]],
+            'application_context' => [
+                'return_url' => route('paypal.payment.success'),
+                'cancel_url' => route('paypal.payment.cancel'),
+            ],
+        ]);
 
         if ($response->failed()) {
-            return response()->json(['error' => 'Failed to create PayPal order.'], 500);
+            return back()->with('error', 'Failed to create PayPal order.');
         }
 
-        $order = $response->json();
-
+        $order      = $response->json();
         $approveUrl = collect($order['links'])->firstWhere('rel', 'approve')['href'] ?? null;
 
-        return response()->json([
-            'id'          => $order['id'],
-            'approve_url' => $approveUrl,
-        ]);
-    }
-
-    public function capture(Request $request)
-    {
-        $accessToken = $this->getAccessToken();
-
-        $response = Http::withToken($accessToken)
-            ->post("{$this->baseUrl}/v2/checkout/orders/{$request->query('token')}/capture");
-
-        if ($response->failed()) {
-            return redirect()->route('paypal.payment.failed')->with('error', 'Payment failed.');
-        }
-
-        $data = $response->json();
-
-        // Optionally save payment info to DB
-
-        return redirect()->route('paypal.payment.success')->with('success', 'Payment successful.');
-    }
-
-    public function cancel()
-    {
-        return redirect()->route('paypal.payment.cancel')->with('error', 'Payment cancelled.');
-    }
-
-    public function createTransaction()
-    {
-        $provider = new PayPalClient;
-        $provider->setApiCredentials(config('paypal'));
-        $tokenResponse = $provider->getAccessToken();
-
-
-         // ✅ SAFETY CHECK
-    if (!isset($tokenResponse['access_token'])) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Failed to get PayPal access token.',
-            'paypal_response' => $tokenResponse
-        ], 500);
-    }
-
-            // $tokenResponse = $provider->getAccessToken();
-        $response = $provider->createOrder([
-            "intent"              => "CAPTURE",
-            "application_context" => [
-                "return_url" => route('paypal.payment.success'),
-                "cancel_url" => route('paypal.payment.cancel'),
-            ],
-            "purchase_units"      => [
-                [
-                    "amount" => [
-                        "currency_code" => "USD",
-                        "value"         => "10.00",
-                    ],
-                ],
-            ],
-        ]);
-
-        if (isset($response['id']) && $response['status'] == 'CREATED') {
-            foreach ($response['links'] as $link) {
-                if ($link['rel'] === 'approve') {
-                    return redirect()->away($link['href']);
-                }
-            }
-        }
-
-        return redirect()->route('payment.failed')->with('error', 'Something went wrong.');
+        return $approveUrl
+        ? redirect()->away($approveUrl)
+        : back()->with('error', 'Approval URL not found.');
     }
 
     public function paymentSuccess(Request $request)
-{
-    return view('payment.paypal.success');
-}
+    {
+        $token = $request->query('token');
+        if (! $token) {
+            return redirect()->route('paypal.payment.failed')->with('error', 'Missing PayPal token.');
+        }
 
-public function paymentCancel()
-{
-    return view('payment.paypal.cancelled');
-}
+        $provider = new PayPalClient;
+        $provider->setApiCredentials(config('paypal'));
+        $accessToken = $provider->getAccessToken();
 
-public function paymentFailed()
-{
-    return view('payment.paypal.failed');
-}
+        if (! isset($accessToken['access_token'])) {
+            return redirect()->route('paypal.payment.failed')->with('error', 'PayPal auth failed.');
+        }
 
+        $response = $provider->capturePaymentOrder($token);
+
+        if (! isset($response['status']) || $response['status'] !== 'COMPLETED') {
+            return redirect()->route('paypal.payment.failed')->with('error', 'Payment not completed.');
+        }
+
+        $paymentLink = PaymentLink::where('token', $token)->first();
+        if (! $paymentLink) {
+            return redirect()->route('paypal.payment.failed')->with('error', 'Payment link not found.');
+        }
+
+        $paymentLink->update([
+            'status'           => 'Paid',
+            'transaction_id'   => $response['id'],
+            'gateway_response' => json_encode($response),
+            'paid_at'          => now(),
+        ]);
+
+        // ✅ Check if WelcomeCall already exists for this profile
+        $existingCall = \App\Models\WelcomeCall::where('profile_id', $paymentLink->profile_id)->first();
+        if (! $existingCall) {
+            \App\Models\WelcomeCall::create([
+                'profile_id'      => $paymentLink->profile_id,
+                'payment_link_id' => $paymentLink->id,
+                'user_id'         => $paymentLink->user_id ?? auth()->id(), // Fallback to current user
+                'status'          => 'Pending',
+                'call_time'       => now()->addDay(), // optional: schedule next day
+                'outcome'         => null,
+                'notes'           => 'Auto-created after successful payment.',
+            ]);
+        }
+
+        return view('payment.paypal.success');
+    }
+
+    public function paymentCancel()
+    {
+        return view('payment.paypal.cancelled');
+    }
+
+    public function paymentFailed()
+    {
+        return view('payment.paypal.failed');
+    }
 }

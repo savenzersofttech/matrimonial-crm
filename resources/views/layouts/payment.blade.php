@@ -1,253 +1,47 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
-
+<html lang="en">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
-    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta charset="utf-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <title>@hasSection('title')@yield('title') | @endif Elitebandhan</title>
-    <!-- Core CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/simple-datatables@7.1.2/dist/style.min.css" rel="stylesheet" />
-    <link href="https://cdn.jsdelivr.net/npm/litepicker/dist/css/litepicker.css" rel="stylesheet" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <meta name="description" content="Payment Portal" />
+    <meta name="author" content="" />
+    <title>@yield('title', 'Payment') | Elitebandhan</title>
+
     <link href="{{ asset('assets/sb2/css/styles.css') }}" rel="stylesheet" />
-    <link href="{{ asset('assets/sb2/css/virtual-select.min.css') }}" rel="stylesheet" />
-    <link rel="icon" type="image/x-icon" href="{{ asset('assets/sb2/assets/img/favicon.png') }}" />
-    <!-- intl-tel-input CSS -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.19/css/intlTelInput.css" />
-    <link rel="stylesheet" href="{{ asset('assets/sb2/css/custom.css') }}" />
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <link rel="icon" type="image/x-icon" href="{{ asset('assets/sb2/img/favicon.png') }}" />
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.3.0/js/all.min.js" defer crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/feather-icons/4.29.0/feather.min.js" crossorigin="anonymous"></script>
 
-
-    {{-- <link  href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet">" --}}
-    <link href="https://cdn.datatables.net/2.3.2/css/dataTables.bootstrap5.css" rel="stylesheet">"
-
-    <link href="https://cdn.jsdelivr.net/npm/litepicker@2.0.12/dist/css/litepicker.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/intl-tel-input@23.5.0/build/css/intlTelInput.css">
-    <style>
-        .was-validated .form-control:valid {
-            border-color: #ced4da;
-            background-image: none;
-        }
-
-        .was-validated .form-control:valid:focus {
-            border-color: #86b7fe;
-            box-shadow: none;
-        }
-
-        .was-validated .valid-feedback {
-            display: none !important;
-        }
-
-        .iti {
-            width: 100%;
-        }
-
-        .iti__country-list {
-            width: 100% !important;
-            /* Match dropdown width to input */
-            max-width: 100% !important;
-            /* Ensure it doesn't exceed input width */
-            min-width: auto !important;
-            /* Allow natural width adjustment */
-            box-sizing: border-box;
-            /* Include padding and border in width calculation */
-        }
-
-        .iti__country-list .iti__country {
-            padding: 5px 10px;
-            /* Adjust padding for better appearance */
-        }
-
-    </style>
-
-
-    <style>
-        .required::after {
-        content: " *";
-        color: red;
-    }
-
-        .vscomp-option.disabled {
-            display: none !important;
-        }
-
-        .decorationA {
-            text-decoration: none !important;
-        }
-
-
-
-        label.error {
-            color: red !important;
-            font-size: 0.8rem !important;
-            line-height: 1.2;
-            margin-top: 0.25rem;
-            display: block;
-            position: relative;
-            text-align: left !important;
-        }
-
-
-        input.error {
-            border: 1px solid red !important;
-        }
-
-        textarea.error {
-            border: 1px solid red;
-        }
-
-        select.error {
-            border: 1px solid red;
-        }
-
-        input.error::focus {
-            border: 1px solid red !important;
-        }
-
-        textarea.error::focus {
-            border: 1px solid red;
-        }
-
-        select.error::focus {
-            border: 1px solid red;
-        }
-
-        div.vscomp-wrapper.focused .vscomp-toggle-button,
-        div.vscomp-wrapper:focus .vscomp-toggle-button {
-            box-shadow: none;
-        }
-
-        div.vscomp-toggle-button {
-            width: 100%;
-            height: calc(1.5em + .75rem + 7px);
-            padding: .375rem .75rem;
-            font-size: 1rem;
-            font-weight: 400;
-            line-height: 1.5;
-            color: #6e707e;
-            background-color: #fff;
-            background-clip: padding-box;
-            border: 1px solid #d1d3e2;
-            border-radius: 0.35rem;
-            transition: border-color .15s ease-in-out, box-shadow .15s ease-in-out;
-        }
-
-        div.vscomp-ele {
-            max-width: 100%;
-        }
-
-        /* Chrome, Safari, Edge, Opera */
-        input::-webkit-outer-spin-button,
-        input::-webkit-inner-spin-button {
-            -webkit-appearance: none;
-            margin: 0;
-        }
-
-        /* Firefox */
-        input[type=number] {
-            -moz-appearance: textfield;
-        }
-
-        table#dataTable a:hover {
-            text-decoration: none;
-        }
-
-    </style>
-
-
-
-    <!-- Allow child views to add CSS -->
-    @stack('css')
+    @stack('head')
 </head>
-
-<body class="nav-fixed">
-    @include('layouts.partials.sb2.navbar')
-    <div id="layoutSidenav">
-      
-
-        <div id="layoutSidenav_content">
-            @yield('content')
-            @include('layouts.partials.sb2.footer')
+<body class="bg-primary">
+    <div id="layoutAuthentication">
+        <div id="layoutAuthentication_content">
+            <main>
+                @yield('content')
+            </main>
+        </div>
+        <div id="layoutAuthentication_footer">
+            <footer class="footer-admin mt-auto footer-dark">
+                <div class="container-xl px-4">
+                    <div class="row">
+                        <div class="col-md-6 small">Copyright © Elitebandhan {{ now()->year }}</div>
+                        <div class="col-md-6 text-md-end small">
+                            <a href="#">Privacy Policy</a> ·
+                            <a href="#">Terms & Conditions</a>
+                        </div>
+                    </div>
+                </div>
+            </footer>
         </div>
     </div>
 
-    <!-- Core JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous">
-    </script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.3.0/js/all.min.js" crossorigin="anonymous"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/feather-icons/4.29.0/feather.min.js" crossorigin="anonymous">
-    </script>
-
-
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.min.js" crossorigin="anonymous"></script>
-    {{-- <script src="{{ asset('assets/sb2/assets/demo/chart-area-demo.js') }}"></script> --}}
-    {{-- <script src="{{ asset('assets/sb2/assets/demo/chart-bar-demo.js') }}"></script> --}}
-    <script src="https://cdn.jsdelivr.net/npm/simple-datatables@7.1.2/dist/umd/simple-datatables.min.js" crossorigin="anonymous"></script>
-    <script src="{{ asset('assets/sb2/js/datatables/datatables-simple-demo.js') }}"></script>
-    <script src="https://cdn.jsdelivr.net/npm/litepicker/dist/bundle.js" crossorigin="anonymous"></script>
-    <script src="{{ asset('assets/sb2/js/litepicker.js') }}"></script>
-    {{-- <script src="{{ asset('assets/sb2/js/custom/form.js') }}"></script> --}}
-    <script src="{{ asset('assets/sb2/js/custom/script.js') }}"></script>
-    <script src="https://cdn.jsdelivr.net/npm/litepicker@2.0.12/dist/litepicker.js"></script>
-
-    <!-- intl-tel-input JS -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.19/js/intlTelInput.min.js"></script>
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
-    <script src="https://unpkg.com/feather-icons"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="{{ asset('assets/sb2/js/virtual-select.min.js') }}"></script>
-    <script src="{{ asset('assets/sb2/js/jquery.validate.min.js') }}"></script>
-
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.datatables.net/2.3.2/js/dataTables.js"></script>
-    <script src="https://cdn.datatables.net/2.3.2/js/dataTables.bootstrap5.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/intl-tel-input@23.5.0/build/js/intlTelInput.min.js"></script>
-
-    <script src="{{ asset('assets/sb2/js/formjs.js') }}"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
     <script src="{{ asset('assets/sb2/js/scripts.js') }}"></script>
-    <script src="{{ asset('assets/sb2/js/functions.js') }}"></script>
-    <script>
-        feather.replace();
+    <sb-customizer project="sb-admin-pro"></sb-customizer>
 
-    </script>
-
-    <!-- Toast container -->
-    <div style="position: fixed; bottom: 1rem; right: 1rem; z-index: 9999;">
-        <!-- ✅ Success Toast -->
-        <div class="toast" id="successToster" role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="3000">
-            <div class="toast-header bg-primary text-white">
-                <i data-feather="check-circle"></i>
-                <strong id="successTitle" class="ms-2 me-auto">Success</strong>
-                <button class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
-            </div>
-            <div id="successBody" class="toast-body">Success message here</div>
-        </div>
-
-        <!-- ❌ Danger Toast -->
-        <div class="toast" id="dangerToster" role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="3000">
-            <div class="toast-header bg-danger text-white">
-                <i data-feather="alert-circle"></i>
-                <strong id="dangerTitle" class="ms-2 me-auto">Error</strong>
-                <button class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
-            </div>
-            <div id="dangerBody" class="toast-body">Error message here</div>
-        </div>
-    </div>
-
-    </div>
-
-    <!-- Feather Icons -->
-    <script>
-        feather.replace();
-
-    </script>
-
-   
+    @stack('scripts')
 </body>
-
 </html>

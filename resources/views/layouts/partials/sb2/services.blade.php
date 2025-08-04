@@ -43,7 +43,7 @@
                 </a>
                 <a class="nav-link {{ request()->routeIs('services.reports*') ? 'active' : '' }}" href="{{ route('services.reports.index') }}">
                     <div class="nav-link-icon"><i data-feather="users"></i></div>
-                    Profiles Reports
+                    Profiles Search
                 </a>
                 <a class="nav-link {{ request()->routeIs('services.payments*') ? 'active' : '' }}" href="{{ route('services.payments.index') }}">
                     <div class="nav-link-icon"><i data-feather="credit-card"></i></div>

@@ -19,31 +19,31 @@ class WelcomeCall extends Model
         'notes',
     ];
 
-    // protected static function booted()
-    // {
-    //     static::created(function ($call) {
-    //         $call->saveHistory();
-    //     });
+    protected static function booted()
+    {
+        static::created(function ($call) {
+            $call->saveHistory();
+        });
 
-    //     static::updated(function ($call) {
-    //         if ($call->isDirty()) {
-    //             $call->saveHistory();
-    //         }
-    //     });
-    // }
+        static::updated(function ($call) {
+            if ($call->isDirty()) {
+                $call->saveHistory();
+            }
+        });
+    }
 
-    // public function saveHistory()
-    // {
-    //     \App\Models\WelcomeCallHistory::create([
-    //         'welcome_call_id' => $this->id,
-    //         'profile_id'      => $this->profile_id,
-    //         'user_id'         => $this->user_id,
-    //         'call_time'       => $this->call_time,
-    //         'status'          => $this->status,
-    //         'outcome'         => $this->outcome,
-    //         'notes'           => $this->notes,
-    //     ]);
-    // }
+    public function saveHistory()
+    {
+        \App\Models\WelcomeCallHistory::create([
+            'welcome_call_id' => $this->id,
+            'profile_id'      => $this->profile_id,
+            'user_id'         => $this->user_id,
+            'call_time'       => $this->call_time,
+            'status'          => $this->status,
+            'outcome'         => $this->outcome,
+            'notes'           => $this->notes,
+        ]);
+    }
 
     public function profile()
     {
@@ -64,4 +64,8 @@ class WelcomeCall extends Model
     {
         return $this->hasMany(WelcomeCallHistory::class, 'welcome_call_id');
     }
+    public function paymentLink()
+{
+    return $this->belongsTo(PaymentLink::class);
+}
 }

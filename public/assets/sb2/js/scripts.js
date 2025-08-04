@@ -263,3 +263,14 @@ function truncateWords(text, wordLimit = 3 ) {
     if (words.length <= wordLimit) return text;
     return words.slice(0, wordLimit).join(" ") + "...";
 }
+
+$(document).on('click', '.copy-link-btn', function () {
+    const link = $(this).data('link');
+    navigator.clipboard.writeText(link)
+        .then(() => {
+             showSuccessToast("Success!", "Link copied to clipboard!");
+        })
+        .catch(() => {
+                showDangerToast("Error!", "Failed to copy link.");
+        });
+});

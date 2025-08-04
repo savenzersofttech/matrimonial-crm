@@ -35,12 +35,11 @@
                             <tr>
                                 <th class="text-center">S. No.</th>
                                 <th class="text-center">Name</th>
+                                <th class="text-center">Contact</th>
                                 <th class="text-center">Plan</th>
-                                <th class="text-center">Price</th>
-                                <th class="text-center">Discount</th>
                                 <th class="text-center">Amount</th>
                                 <th class="text-center">Status</th>
-                                <th class="text-center">Link Send at</th>
+                                <th class="text-center">Last Sent	</th>
                                 <th class="text-center">Actions</th>
                             </tr>
                         </thead>
@@ -189,8 +188,18 @@
                             class="btn btn-datatable btn-icon btn-transparent-dark me-2"
                             aria-label="Edit User"
                             title="Edit">    <i class="fas fa-pen"></i>
-
                         </button>
+                        <button 
+    type="button"
+    data-id="${a.id}" 
+    onclick="showSuccessToast('Success!', 'Link sent!')"  
+    class="btn btn-datatable btn-icon btn-transparent-dark"
+    aria-label="Send Link"
+    title="Send">
+    <i class="fas fa-paper-plane"></i>
+</button>
+
+
                         <button 
                             type="button"
                             data-href = "{{ route('services.payments.destroy', ':id') }}"
@@ -222,42 +231,72 @@
 
                   {
                      data: 'profile.name',
-                  }, {
-                     data: 'package.name',
-                  }, {
-                     data: null,
-                     render: function (data, type, row) {
-                        return formatCurrency(row.price, row.currency);
-                     }
-                  },
-                  {
-                     data: null,
-                     width: '10px',
-                     render: function (data, type, row) {
-                        return row.discount ? row.discount + '%' : '0%';
-                     },
-                     title: 'Discount'
-                  },
-                  {
-                    data: 'final_amount',
-                    title: 'Final',
-                      width: '10px',
-                    render: function (data, type, row) {
-                                return `<span class="fw-bold text-dark">${formatCurrency(data, row.currency)}</span>`;
+                  },{
+                 data: null,
+                 className: 'text-start',
+                 render: function(data, type, row) {
+                     const phone = row.profile?.phone_number || '-';
+                     const email = row.profile?.email || '';
+                     let html = '';
 
+                     if (phone) {
+                         html += `<div><i class="fas fa-phone me-1"></i> ${phone}</div>`;
+                     }
+
+                     if (email) {
+                         html += `<div><i class="fas fa-envelope  me-1"></i> ${email}</div>`;
+                     }
+
+                     return html;
+                 }
+             }, {
+                     data: 'package.name',
+                  },
+                  
+                 {
+                    data: null,
+                    title: 'Amount',
+                    orderable: false,
+                    searchable: false,
+                    render: function (data, type, row) {
+                        const price = formatCurrency(row.price, row.currency);
+                        const discount = row.discount ? `${row.discount}%` : '0%';
+                        const final = formatCurrency(row.final_amount, row.currency);
+
+                        return `
+                            <div class="d-flex flex-column text-start">
+                                <small class="text-muted">Base: ${price}</small>
+                                <small class="text-muted">Discount: ${discount}</small>
+                                <span class="fw-bold text-dark">Final: ${final}</span>
+                            </div>
+                        `;
                     }
-                   }, {
+                    }, {
                      data: 'status',
                      orderable: false,
                      searchable: false,
                      render: function (data, type, row) {
                         return getStatusBadge(data);
                      }
-                  }, {
-                     data: 'sent_at',
-                     orderable: false,
-                     searchable: false
-                  }, {
+                  },{
+   data: 'sent_at',
+   orderable: false,
+   searchable: false,
+   render: function (data, type, row) {
+      const link = row.payment_link ?? '#';
+
+      return `
+         <div class="d-flex align-items-center gap-2">
+            <small class="text-muted">${data ?? 'N/A'}</small>
+            <button class="btn btn-sm btn-outline-primary copy-link-btn" data-link="${link}" title="Copy Link">
+               Copy Link
+            </button>
+         </div>
+      `;
+   }
+}
+
+, {
                      data: 'sent_at',
                      orderable: false,
                      searchable: false

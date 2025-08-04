@@ -40,13 +40,13 @@ $(document).ready(function () {
     attachOtherInput('mother_occupation', 'mother_occupation_other', 'Enter value');
 
     //partner
-        attachOtherInput('partner_religion', 'partner_religion_other', 'Enter Religion');
-        attachOtherInput('partner_cast', 'partner_cast_other', 'Enter Religion');
-        attachOtherInput('partner_diet', 'partner_diet_other', 'Enter Diet');
-        attachOtherInput('partner_highest_qualification', 'partner_highest_qualification_other', 'Enter Qualification');
-        attachOtherInput('partner_education_field', 'partner_education_field_other', 'Enter Education');
-        attachOtherInput('partner_working_with', 'partner_working_with_other', 'Enter value');
-        attachOtherInput('partner_profession', 'partner_profession_other', 'Enter value');
+    attachOtherInput('partner_religion', 'partner_religion_other', 'Enter Religion');
+    attachOtherInput('partner_cast', 'partner_cast_other', 'Enter Religion');
+    attachOtherInput('partner_diet', 'partner_diet_other', 'Enter Diet');
+    attachOtherInput('partner_highest_qualification', 'partner_highest_qualification_other', 'Enter Qualification');
+    attachOtherInput('partner_education_field', 'partner_education_field_other', 'Enter Education');
+    attachOtherInput('partner_working_with', 'partner_working_with_other', 'Enter value');
+    attachOtherInput('partner_profession', 'partner_profession_other', 'Enter value');
 
 });
 
@@ -66,57 +66,104 @@ $(document).ready(function () {
     }
 
     // Load States on Country Change
-    countrySelect.addEventListener('change', function () {
-        const country = this.value;
+        // Load States on Country Change
+countrySelect.addEventListener('change', async function () {
+    const selectedCountries = this.value; // Use VirtualSelect.getSelectedValues() if needed
 
-        setVirtualOptions(stateSelect, []);
-        setVirtualOptions(citySelect, []);
+    console.log('selectedCountries', selectedCountries);
 
-        if (country === 'Open to All') {
-            setVirtualOptions(stateSelect, [{ label: 'Open to All', value: 'Open to All' }]);
-            return;
-        }
+    setVirtualOptions(stateSelect, []);
+    setVirtualOptions(citySelect, []);
 
-        $.ajax({
+    if (!selectedCountries || selectedCountries.includes('Open to All')) {
+        setVirtualOptions(stateSelect, [{ label: 'Open to All', value: 'Open to All' }]);
+        return;
+    }
+
+    let allStates = [];
+
+    // Use Promise.all to handle multiple API requests in parallel
+    const stateRequests = selectedCountries.map(country => {
+        return $.ajax({
             url: "https://countriesnow.space/api/v0.1/countries/states",
             method: "POST",
             contentType: "application/json",
-            data: JSON.stringify({ country }),
-            success: function (res) {
-                const states = res.data.states.map(s => ({ label: s.name, value: s.name }));
-                states.push({ label: 'Open to All', value: 'Open to All' });
-                setVirtualOptions(stateSelect, states);
-            },
-            error: function () {
-                setVirtualOptions(stateSelect, [{ label: 'Open to All', value: 'Open to All' }]);
-            }
+            data: JSON.stringify({ country })
+        }).then(res => {
+            const states = res.data.states.map(s => ({
+                label: `${s.name} (${country})`,
+                value: s.name
+            }));
+            allStates = allStates.concat(states);
+        }).catch(() => {
+            console.warn(`Failed to fetch states for ${country}`);
         });
     });
+
+    // Wait for all requests to complete
+    await Promise.all(stateRequests);
+
+    // Remove duplicates (optional)
+    const uniqueStates = Array.from(
+        new Map(allStates.map(state => [state.label, state])).values()
+    );
+
+    // Add "Open to All" option
+    uniqueStates.push({ label: 'Open to All', value: 'Open to All' });
+
+    setVirtualOptions(stateSelect, uniqueStates);
+});
+
 
     // Load Cities on State Change
-    stateSelect.addEventListener('change', function () {
-        const country = countrySelect.value;
-        const state = this.value;
+    // Load Cities on State Change
+stateSelect.addEventListener('change', async function () {
+    const selectedCountries = countrySelect.value; // Make sure this is an array (use VirtualSelect.getSelectedValues() if needed)
+    const selectedStates = this.value;             // Also ensure this is an array
 
-        setVirtualOptions(citySelect, []);
+    setVirtualOptions(citySelect, []);
 
-        if (state === 'Open to All' || country === 'Open to All') {
-            setVirtualOptions(citySelect, [{ label: 'Open to All', value: 'Open to All' }]);
-            return;
+    if (!selectedCountries || !selectedStates || 
+        selectedCountries.includes('Open to All') || selectedStates.includes('Open to All')) {
+        setVirtualOptions(citySelect, [{ label: 'Open to All', value: 'Open to All' }]);
+        return;
+    }
+
+    let allCities = [];
+
+    const cityRequests = [];
+
+    for (const country of selectedCountries) {
+        for (const state of selectedStates) {
+            cityRequests.push(
+                $.ajax({
+                    url: "https://countriesnow.space/api/v0.1/countries/state/cities",
+                    method: "POST",
+                    contentType: "application/json",
+                    data: JSON.stringify({ country, state })
+                }).then(res => {
+                    const cities = res.data.map(c => ({
+                        label: `${c} (${state}, ${country})`,
+                        value: c
+                    }));
+                    allCities = allCities.concat(cities);
+                }).catch(() => {
+                    console.warn(`Failed to fetch cities for ${state}, ${country}`);
+                })
+            );
         }
+    }
 
-        $.ajax({
-            url: "https://countriesnow.space/api/v0.1/countries/state/cities",
-            method: "POST",
-            contentType: "application/json",
-            data: JSON.stringify({ country, state }),
-            success: function (res) {
-                const cities = res.data.map(c => ({ label: c, value: c }));
-                cities.push({ label: 'Open to All', value: 'Open to All' });
-                setVirtualOptions(citySelect, cities);
-            },
-            error: function () {
-                setVirtualOptions(citySelect, [{ label: 'Open to All', value: 'Open to All' }]);
-            }
-        });
-    });
+    await Promise.all(cityRequests);
+
+    // Remove duplicates
+    const uniqueCities = Array.from(
+        new Map(allCities.map(city => [city.label, city])).values()
+    );
+
+    // Add "Open to All" option
+    uniqueCities.push({ label: 'Open to All', value: 'Open to All' });
+
+    setVirtualOptions(citySelect, uniqueCities);
+});
+

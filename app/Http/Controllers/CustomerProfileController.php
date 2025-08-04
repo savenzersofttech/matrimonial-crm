@@ -121,7 +121,7 @@ class CustomerProfileController extends Controller
         foreach ($data as $index => &$item) {
             $item['s_no'] = $start + $index + 1;
 
-            $item['created_at'] = \Carbon\Carbon::parse($item['created_at'])->format('d/m/Y h:i A');
+            $item['created_at'] = \Carbon\Carbon::parse($item['created_at'])->format('d/m/Y');
             $item['updated_at'] = \Carbon\Carbon::parse($item['updated_at'])->format('d/m/Y h:i A');
         }
         // Total records

@@ -25,6 +25,7 @@ return new class extends Migration
             $table->string('transaction_id')->nullable(); // ID returned by the payment gateway
             $table->json('gateway_response')->nullable(); // Raw JSON response from Razorpay/PayPal
             $table->enum('status', ['Pending', 'Paid', 'Failed'])->default('Pending')->index();
+            $table->timestamp('paid_at')->nullable();
             $table->timestamp('sent_at')->nullable();
             $table->date('start_date')->nullable();
             $table->date('end_date')->nullable();

@@ -6,6 +6,9 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
+use App\Models\PaymentLink;
+use App\Models\Package;
+
 
 class User extends Authenticatable
 {
@@ -90,5 +93,23 @@ class User extends Authenticatable
     {
         return $this->hasMany(LeadCompletion::class);
     }
+
+    public function paymentLinks()
+{
+    return $this->hasMany(PaymentLink::class);
+}
+
+public function packages()
+{
+    return $this->hasManyThrough(
+        Package::class,
+        PaymentLink::class,
+        'user_id', // Foreign key on payment_links table
+        'id',      // Foreign key on packages table (usually 'id')
+        'id',      // Local key on users table
+        'plan_id'  // Local key on payment_links table that connects to packages
+    );
+}
+
 
 }

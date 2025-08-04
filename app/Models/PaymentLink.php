@@ -19,6 +19,7 @@ class PaymentLink extends Model
         'final_amount',
         'payment_link',
         'token',
+        'paid_at',
         'gateway',
         'transaction_id',
         'gateway_response',
@@ -28,7 +29,7 @@ class PaymentLink extends Model
         'end_date',
     ];
 
-     protected static function booted()
+    protected static function booted()
     {
         parent::booted();
 
@@ -39,14 +40,32 @@ class PaymentLink extends Model
         static::updated(function ($model) {
             $changes = $model->getChanges();
             unset($changes['updated_at']); // optional
-            if (!empty($changes)) {
+
+            if (! empty($changes)) {
                 self::logModelChange($model, 'updated', $changes);
+            }
+
+            // ✅ If status changed to "Paid" AND WelcomeCall doesn't already exist
+            if (
+                array_key_exists('status', $changes)
+                && $changes['status'] === 'Paid'
+                && ! WelcomeCall::where('profile_id', $model->profile_id)->exists()
+            ) {
+                WelcomeCall::create([
+                    'profile_id'      => $model->profile_id,
+                    'payment_link_id' => $model->id,
+                    'user_id'         => $model->user_id ?? auth()->id(),
+                    'status'          => 'Pending',
+                    'call_time'       => now()->addDay(),
+                    'outcome'         => null,
+                    'notes'           => 'Auto-created after status manually set to Paid.',
+                ]);
             }
         });
 
         static::deleting(function ($model) {
-             $snapshot = $model->toArray();
-              self::logModelChange($model, 'deleted', $snapshot);
+            $snapshot = $model->toArray();
+            self::logModelChange($model, 'deleted', $snapshot);
         });
 
         // Existing WelcomeCall logic can also stay here...
@@ -65,8 +84,6 @@ class PaymentLink extends Model
         ]);
     }
 
-    
-
     // Relationship to profile (prospect)
     public function profile()
     {
@@ -77,8 +94,5 @@ class PaymentLink extends Model
     {
         return $this->belongsTo(Package::class, 'plan_id');
     }
-
-   
-    
 
 }

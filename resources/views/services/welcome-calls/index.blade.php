@@ -41,8 +41,9 @@
                         <thead>
                             <tr>
                                 <th>#</th>
-                                <th>Profile</th>
+                                <th>Name</th>
                                 <th>Contact</th>
+                                {{-- <th>Membership Type</th> --}}
                                 <th>Status</th>
                                 <th>Outcome</th>
                                 <th>Note</th>

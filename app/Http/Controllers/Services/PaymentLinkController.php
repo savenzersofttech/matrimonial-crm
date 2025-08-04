@@ -2,17 +2,13 @@
 namespace App\Http\Controllers\Services;
 
 use App\Http\Controllers\Controller;
-
+use App\Models\Package;
 use App\Models\PaymentLink;
-use App\Models\{
-    Profile,
-    Service,
-    Package,
-};
+use App\Models\Profile;
+use App\Models\Service;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Str;
 
 class PaymentLinkController extends Controller
 {
@@ -41,7 +37,7 @@ class PaymentLinkController extends Controller
         $search    = $request->post('search')['value'] ?? null;
 
         $query = PaymentLink::selectRaw('*')
-            ->with(['profile:id,name', 'package:id,name']);
+            ->with(['profile:id,name,email,phone_number', 'package:id,name']);
 
         // $query =  PaymentLink::with(['profile:id,name', 'package:id,name'])
         //     ->get();
@@ -78,7 +74,10 @@ class PaymentLinkController extends Controller
         $data = $query->offset($start)->limit($length)->get()->toArray();
         // Add serial number manually based on pagination offset
         foreach ($data as $index => &$item) {
-            $item['s_no'] = $start + $index + 1;
+            $item['s_no']       = $start + $index + 1;
+            $item['sent_at']    = \Carbon\Carbon::parse($item['sent_at'])->format('d/m/Y h:i A');
+            $item['created_at'] = \Carbon\Carbon::parse($item['created_at'])->format('d/m/Y h:i A');
+            $item['updated_at'] = \Carbon\Carbon::parse($item['updated_at'])->format('d/m/Y h:i A');
         }
         // Total records
         $recordsTotal = PaymentLink::count();
@@ -143,9 +142,17 @@ class PaymentLinkController extends Controller
             $finalAmount = $request->price - ($request->price * ($request->discount / 100));
             // $userId = Auth::check() ? Auth::id() : null;
 
+            $token = hash('sha256', now()->format('YmdHis') . uniqid() . rand());
+
+            $link = '';
+            if ($request->currency === 'USD') {
+                $link = route('paypal.payment.page', ['token' => $token]);
+            } else {
+                $link = route('razorpay.payment.page', ['token' => $token]);
+            }
+
             $paymentLink = PaymentLink::create([
                 'profile_id'   => $request->profile_id,
-                // 'user_id' => $userId,
                 'plan_id'      => $request->plan_id,
                 'status'       => 'Pending',
                 'price'        => $request->price,
@@ -153,7 +160,8 @@ class PaymentLinkController extends Controller
                 'gateway'      => $request->currency === 'USD' ? 'paypal' : 'razorpay',
                 'discount'     => $request->discount,
                 'final_amount' => round($finalAmount),
-                'payment_link' => 'https://payment.example.com/' . Str::random(32),
+                'payment_link' => $link,
+                'token'        => $token,
                 'start_date'   => $request->start_date,
                 'end_date'     => $request->end_date,
                 'sent_at'      => now(),
@@ -228,7 +236,7 @@ class PaymentLinkController extends Controller
             // dd($request->status);
             $finalAmount = $request->price - ($request->price * ($request->discount / 100));
 
-            $paymentLink->update([
+            $updateData = [
                 'profile_id'   => $request->profile_id,
                 'plan_id'      => $request->plan_id,
                 'status'       => $request->status,
@@ -239,7 +247,14 @@ class PaymentLinkController extends Controller
                 'final_amount' => round($finalAmount),
                 'start_date'   => $request->start_date,
                 'end_date'     => $request->end_date,
-            ]);
+            ];
+
+// Conditionally set paid_at if status is 'paid'
+            if ($request->status === 'paid' || $request->status === 'Paid') {
+                $updateData['paid_at'] = now();
+            }
+
+            $paymentLink->update($updateData);
 
             if ($paymentLink->status === 'Paid' || $paymentLink->status === 'paid') {
                 $existingActiveService = Service::where('profile_id', $request->profile_id)

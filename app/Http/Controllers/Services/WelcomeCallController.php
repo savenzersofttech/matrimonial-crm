@@ -27,6 +27,7 @@ class WelcomeCallController extends Controller
         $query = WelcomeCall::with([
             'profile:id,name,email,phone_number,profile_source_id,profile_source_comment',
             'employee:id,name',
+                'paymentLink.package:id,name,slug,duration_days,type',
         ]);
 
         // Search filter
@@ -86,8 +87,8 @@ class WelcomeCallController extends Controller
     {
         $employeeId       = Auth::id();
         $assignProfileIds = ProfileEmployeeAssignment::where('employee_id', $employeeId)->pluck('profile_id');
-        $calls            = WelcomeCall::with(['profile:id,name,email,phone_number', 'profileAssignment.assignedBy', 'followUpHistories' => function ($query) {
-            $query->latest('follow_up_date')->first(); // Works with datetime
+        $calls            = WelcomeCall::with(['profile:id,name,email,phone_number', 'profileAssignment.assignedBy', 'history' => function ($query) {
+            $query->latest('call_time')->first(); // Works with datetime
         }])
             ->whereIn('profile_id', $assignProfileIds)
             ->get();
