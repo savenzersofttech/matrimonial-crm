@@ -15,6 +15,7 @@ use App\Http\Controllers\CustomerProfileController;
 use App\Http\Controllers\EmployeesController;
 use App\Http\Controllers\SalesController;
 use App\Http\Controllers\ServicesController;
+use App\Http\Controllers\PaypalController;
 
 use App\Http\Controllers\Services\{
     ProfileSearchController,
@@ -166,6 +167,23 @@ Route::middleware('auth')->group(function () {
     Route::delete('/user_management/users/{user}/destroy', [UserController::class, 'destroy'])->name('user_management.users.destroy');
 
 });
+
+Route::prefix('paypal')->name('paypal.')->group(function () {
+    Route::post('/create-order', [PaypalController::class, 'createOrder'])->name('create');
+    Route::get('/success', [PaypalController::class, 'capture'])->name('success');
+    Route::get('/cancel', [PaypalController::class, 'cancel'])->name('cancel');
+});
+
+
+Route::prefix('paypal')->name('paypal.')->group(function () {
+    Route::get('/payment/success', [PaypalController::class, 'paymentSuccess'])->name('payment.success');
+    Route::get('/payment/cancel', [PaypalController::class, 'paymentCancel'])->name('payment.cancel');
+    Route::get('/payment/failed', [PaypalController::class, 'paymentFailed'])->name('payment.failed');
+});
+
+
+Route::get('/paypal/create', [PayPalController::class, 'createTransaction'])->name('paypal.create');
+Route::get('/pay-payment/{token}', [PaypalController::class, 'showPaymentPage'])->name('paypal.payment.page');
 
 
 
