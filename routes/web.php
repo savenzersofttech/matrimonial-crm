@@ -181,8 +181,9 @@ Route::prefix('paypal')->name('paypal.')->group(function () {
     Route::get('/payment/failed', [PaypalController::class, 'paymentFailed'])->name('payment.failed');
 });
 
-Route::get('/paypal/create', [PayPalController::class, 'createTransaction'])->name('paypal.create');
 
+Route::get('/paypal/create', [PayPalController::class, 'createTransaction'])->name('paypal.create');
+Route::get('/pay-payment/{token}', [PaypalController::class, 'showPaymentPage'])->name('paypal.payment.page');
 
 
 

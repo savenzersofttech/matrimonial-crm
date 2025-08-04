@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Srmklive\PayPal\Services\PayPal as PayPalClient;
+use App\Models\PaymentLink;
 
 class PaypalController extends Controller
 {
@@ -21,6 +22,15 @@ class PaypalController extends Controller
         ? 'https://api-m.paypal.com'
         : 'https://api-m.sandbox.paypal.com';
     }
+
+
+        public function showPaymentPage($token)
+        {
+            $paymentLink = PaymentLink::with(['profile', 'package'])->where('token', $token)->firstOrFail();
+
+            return view('payment.paypal.preview', compact('paymentLink'));
+        }
+
 
     protected function getAccessToken()
     {
@@ -109,7 +119,7 @@ class PaypalController extends Controller
         ], 500);
     }
 
-            $tokenResponse = $provider->getAccessToken();
+            // $tokenResponse = $provider->getAccessToken();
         $response = $provider->createOrder([
             "intent"              => "CAPTURE",
             "application_context" => [
