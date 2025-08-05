@@ -274,3 +274,98 @@ $(document).on('click', '.copy-link-btn', function () {
                 showDangerToast("Error!", "Failed to copy link.");
         });
 });
+
+
+document.addEventListener('DOMContentLoaded', function () {
+    const limits = {
+        govt_id: [],
+        photo: []
+    };
+
+    const maxLimit = 5;
+
+    function handleUpload(inputId, previewId) {
+        const input = document.getElementById(inputId);
+        const preview = document.getElementById(previewId);
+
+        input.addEventListener('change', function () {
+            const files = Array.from(input.files);
+
+            if (limits[inputId].length + files.length > maxLimit) {
+                showDangerToast("Error!", `You can upload a maximum of ${maxLimit} files.`);
+                return;
+            }
+
+            files.forEach(file => {
+                // Allow images and PDFs for govt_id, images only for photo
+                const validTypes = inputId === 'govt_id' 
+                    ? ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf']
+                    : ['image/jpeg', 'image/png', 'image/jpg'];
+                if (!validTypes.includes(file.type)) {
+                    showDangerToast("Error!", `Invalid file type for ${file.name}.`);
+                    return;
+                }
+
+                limits[inputId].push({ file, dataURL: null });
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    limits[inputId].find(item => item.file === file).dataURL = e.target.result;
+                    renderPreview(inputId, preview, limits[inputId]);
+                };
+                // Generate dataURL only for images (not PDFs)
+                if (file.type.startsWith('image/')) {
+                    reader.readAsDataURL(file);
+                } else {
+                    // For PDFs, use a placeholder or skip preview
+                    renderPreview(inputId, preview, limits[inputId]);
+                }
+            });
+
+            // Do NOT clear input: input.value = '';
+            updateFileInput(inputId, input);
+        });
+    }
+
+    function renderPreview(inputId, container, items) {
+        container.innerHTML = '';
+        items.forEach((item, index) => {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'preview-container';
+
+            if (item.dataURL && item.file.type.startsWith('image/')) {
+                const img = document.createElement('img');
+                img.src = item.dataURL;
+                wrapper.appendChild(img);
+            } else {
+                // Placeholder for non-image files (e.g., PDFs)
+                const placeholder = document.createElement('div');
+                placeholder.textContent = item.file.name;
+                placeholder.style.textAlign = 'center';
+                placeholder.style.fontSize = '12px';
+                wrapper.appendChild(placeholder);
+            }
+
+            const delBtn = document.createElement('span');
+            delBtn.className = 'delete-icon';
+            delBtn.innerHTML = '&times;';
+            delBtn.addEventListener('click', () => {
+                limits[inputId].splice(index, 1);
+                renderPreview(inputId, container, limits[inputId]);
+                updateFileInput(inputId, document.getElementById(inputId));
+            });
+
+            wrapper.appendChild(delBtn);
+            container.appendChild(wrapper);
+        });
+    }
+
+    function updateFileInput(inputId, input) {
+        // Rebuild the file list for the input
+        const dataTransfer = new DataTransfer();
+        limits[inputId].forEach(item => dataTransfer.items.add(item.file));
+        input.files = dataTransfer.files;
+    }
+
+    handleUpload('govt_id', 'preview-govt');
+    handleUpload('photo', 'preview-photo');
+});

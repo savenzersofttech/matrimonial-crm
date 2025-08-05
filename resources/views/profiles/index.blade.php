@@ -141,7 +141,7 @@
                             </div>
                             <div class="col-12 col-md-6">
                                 <label class="form-label">Date of Birth</label>
-                                <input type="date" name="date_of_birth" class="form-control">
+                                <input type="date" name="date_of_birth" id="date_of_birth" class="form-control">
                             </div>
                             <div class="col-12 col-md-6">
                                 <label class="form-label">Marital Status</label>
@@ -908,31 +908,50 @@
 
 @push('scripts')
 <script>
-    $(document).ready(function() {
-            // Initialize International Telephone Input for phone_number with India as default
-            const phoneInput = document.querySelector("#phone_number");
-            const phoneIti = window.intlTelInput(phoneInput, {
-                initialCountry: "in",
-                utilsScript: "https://cdn.jsdelivr.net/npm/intl-tel-input@23.5.0/build/js/utils.js",
-                separateDialCode: true
-            });
-            // Initialize International Telephone Input for alternative_phone_number with India as default
-            const altPhoneInput = document.querySelector("#alternative_phone_number");
-            const altPhoneIti = window.intlTelInput(altPhoneInput, {
-                initialCountry: "in",
-                utilsScript: "https://cdn.jsdelivr.net/npm/intl-tel-input@23.5.0/build/js/utils.js",
-                separateDialCode: true
-            });
-            // Update hidden fields with country codes on input change
-            form.addEventListener('submit', function(event) {
-            // Set the full number for both inputs
+    let configration;
+    const $form = $('#regForm');
+    const routeIndex = "{{ route($role . '.profiles.index') }}";
+    const updateUrl = @json(route($role . '.profiles.update', ['profile' => '__ID__']));
+    let phoneIti, altPhoneIti; // Declare variables in a higher scope
+
+    document.addEventListener("DOMContentLoaded", function() {
+        // Initialize VirtualSelect for all select elements
+        VirtualSelect.init({
+            ele: '.virtualSelect',
+            search: true,
+            multiple: true, // Default to multiple for fields that support it
+            placeholder: 'Select'
+        });
+
+        // Custom validation rule for married siblings
+        $.validator.addMethod("marriedLessThanTotal", function(value, element, params) {
+            const total = $(params).val();
+            return parseInt(value) <= parseInt(total);
+        }, "Value cannot be greater than total.");
+
+        // Initialize International Telephone Input
+        const phoneInput = document.querySelector("#phone_number");
+        phoneIti = window.intlTelInput(phoneInput, {
+            initialCountry: "in",
+            utilsScript: "https://cdn.jsdelivr.net/npm/intl-tel-input@23.5.0/build/js/utils.js",
+            separateDialCode: true
+        });
+
+        const altPhoneInput = document.querySelector("#alternative_phone_number");
+        altPhoneIti = window.intlTelInput(altPhoneInput, {
+            initialCountry: "in",
+            utilsScript: "https://cdn.jsdelivr.net/npm/intl-tel-input@23.5.0/build/js/utils.js",
+            separateDialCode: true
+        });
+
+        // Form submission validation for phone numbers
+        $form.on('submit', function(event) {
             if (phoneInput.value.trim()) {
-                phoneInput.value = phoneIti.getNumber(); // e.g., +60123456789
+                phoneInput.value = phoneIti.getNumber();
             }
             if (altPhoneInput.value.trim()) {
                 altPhoneInput.value = altPhoneIti.getNumber();
             }
-            // Validate main phone number
             if (phoneInput.value.trim() && !phoneIti.isValidNumber()) {
                 phoneInput.classList.add('is-invalid');
                 event.preventDefault();
@@ -940,7 +959,6 @@
             } else {
                 phoneInput.classList.remove('is-invalid');
             }
-            // Validate alternative phone number (if filled)
             if (altPhoneInput.value.trim() && !altPhoneIti.isValidNumber()) {
                 altPhoneInput.classList.add('is-invalid');
                 event.preventDefault();
@@ -948,385 +966,360 @@
             } else {
                 altPhoneInput.classList.remove('is-invalid');
             }
-            form.classList.add('was-validated');
+            $form.addClass('was-validated');
         });
-            // Initialize religion select
-            VirtualSelect.init({
-                ele: '#partner_religion',
-                multiple: true,
-                search: true,
-                placeholder: 'Select Religion'
+
+        // DataTable configuration
+        let colDefs = [{
+            targets: 0,
+            className: 'text-center',
+            orderable: false,
+            searchable: false,
+            width: '50px',
+            render: function(e, t, a, s) {
+                return a.s_no;
+            }
+        }, {
+            targets: -1,
+            title: "Actions",
+            orderable: false,
+            searchable: false,
+            render: function(e, t, a, s) {
+                tableData[a.id] = a;
+                return `
+                    <a target="_blank" href="${routeIndex}/${a.id}"
+                        class="btn btn-datatable btn-icon btn-transparent-dark me-2"
+                        aria-label="View User"
+                        title="View"><i class="fas fa-eye"></i></a>
+                    <button type="button" data-id="index_${a.id}" onclick="openEditModal(${a.id}, this, event)"
+                        class="btn btn-datatable btn-icon btn-transparent-dark me-2"
+                        aria-label="Edit User"
+                        title="Edit"><i class="fas fa-pen"></i></button>
+                    <button type="button" data-id="${a.id}"
+                        data-href="{{ route($role . '.profiles.destroy', ':id') }}"
+                        onclick="deleteConfirmation(this, event)"
+                        class="btn btn-datatable btn-icon btn-transparent-dark"
+                        aria-label="Delete User"
+                        title="Delete"><i class="far fa-trash-can"></i></button>
+                `;
+            }
+        }];
+
+        configration = {
+            processing: true,
+            serverSide: true,
+            order: [],
+            ajax: {
+                url: "{{ route('admin.profiles.showAll') }}",
+                type: 'POST',
+            },
+            columns: [
+                { data: 's_no' },
+                { data: 'profile_id', width: '100px' },
+                {
+                    data: null,
+                    render: function(data, type, row) {
+                        let photoArray = [];
+                        try {
+                            photoArray = JSON.parse(row.photo || '[]');
+                        } catch (e) {
+                            photoArray = [];
+                        }
+                        let photoPath = photoArray.length > 0 ? photoArray[0] : null;
+                        let imageUrl = photoPath
+                            ? `/storage/${photoPath.replace(/\\/g, '')}`
+                            : `/assets/sb2/assets/img/illustrations/profiles/profile-1.png`;
+                        return `
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <img src="${imageUrl}" alt="Photo" width="60" height="60"
+                                    onerror="this.onerror=null;this.src='/assets/sb2/assets/img/illustrations/profiles/profile-1.png';"
+                                    style="object-fit: cover; border-radius: 50%;">
+                            </div>
+                        `;
+                    },
+                    orderable: false,
+                    searchable: true
+                },
+                { data: 'name' },
+                { data: 'phone_number' },
+                { data: 'email' },
+                { data: 'created_at', orderable: false, searchable: false },
+                { data: 'created_at', orderable: false, searchable: false }
+            ],
+            columnDefs: colDefs || [],
+            lengthMenu: [[10, 25, 50, 100, 1000, -1], [10, 25, 50, 100, 1000, "All"]]
+        };
+
+        $(regForm).validate(validationConfig);
+
+        // Load countries
+        $.get("https://countriesnow.space/api/v0.1/countries/positions", function(data) {
+            const countries = data.data.map(c => ({
+                label: c.name,
+                value: c.name
+            }));
+            document.querySelector('#country').setOptions(countries);
+            document.querySelector('#citizenship').setOptions(countries);
+            document.querySelector('#grow_up').setOptions(countries);
+            countries.push({ label: 'Open to All', value: 'Open to All' });
+            document.querySelector('#partner_grow_up').setOptions(countries);
+            document.querySelector('#partner_country').setOptions(countries);
+            document.querySelector('#partner_citizenship').setOptions(countries);
+        });
+
+        // On country change -> Load states
+        document.querySelector('#country').addEventListener('change', function() {
+            const country = this.value;
+            document.querySelector('#state').reset();
+            document.querySelector('#city').reset();
+            $.ajax({
+                url: "https://countriesnow.space/api/v0.1/countries/states",
+                method: "POST",
+                contentType: "application/json",
+                data: JSON.stringify({ country }),
+                success: function(res) {
+                    const states = res.data.states.map(s => ({
+                        label: s.name,
+                        value: s.name
+                    }));
+                    document.querySelector('#state').setOptions(states);
+                }
             });
-            // Initialize caste select
-            VirtualSelect.init({
-                ele: '#partner_caste',
-                multiple: true,
-                search: true,
-                placeholder: 'Select Caste'
+        });
+
+        // On state change -> Load cities
+        document.querySelector('#state').addEventListener('change', function() {
+            const country = document.querySelector('#country').value;
+            const state = this.value;
+            document.querySelector('#city').reset();
+            $.ajax({
+                url: "https://countriesnow.space/api/v0.1/countries/state/cities",
+                method: "POST",
+                contentType: "application/json",
+                data: JSON.stringify({ country, state }),
+                success: function(res) {
+                    const cities = res.data.map(c => ({
+                        label: c,
+                        value: c
+                    }));
+                    document.querySelector('#city').setOptions(cities);
+                }
             });
-            const casteOptions = {
-                Hindu: ["Agarwal", "Brahmin", "Kayastha", "Khatri", "Maratha", "Rajput", "Yadav", "Nair", "Vysya"],
-                Muslim: ["Sunni", "Shia", "Dawoodi Bohra", "Mappila", "Khoja", "Ahmadiyya"],
-                Christian: ["Roman Catholic", "Protestant", "Orthodox"],
-                Sikh: ["Gursikh", "Labana", "Ramdasia", "Ravidasia", "Saini"],
-                Jain: ["Digambar", "Shwetamber", "Marwari Jain"],
-                Parsi: ["Parsi"],
-                Buddhist: ["Buddhist"],
-                Jewish: ["Jewish"],
-                Other: ["No Religion"]
-            };
+        });
 
-            const religionSelect = document.querySelector('#partner_religion');
-            const casteSelect = document.querySelector('#partner_caste');
+        // On religion change -> Load castes
+        document.querySelector('#religion').addEventListener('change', async function() {
+            const religionId = this.value;
+            document.querySelector('#caste').reset();
+            const formData = new FormData();
+            formData.append('religionId', religionId);
+            let op = [{ label: "Other", value: "0" }];
+            try {
+                const response = await makeHttpRequest(
+                    "{{ route($role . '.profiles.showCasts') }}", "POST", formData, true);
+                if (response.success && Array.isArray(response.casts)) {
+                    const casteOptions = response.casts.map(item => ({
+                        label: item.name,
+                        value: item.id
+                    }));
+                    casteOptions.push({ label: "Other", value: "0" });
+                    document.querySelector('#caste').setOptions(casteOptions);
+                } else {
+                    document.querySelector('#caste').setOptions(op);
+                }
+            } catch (error) {
+                console.error('Error loading caste options:', error.message);
+                document.querySelector('#caste').setOptions(op);
+            }
+        });
+    });
 
-            religionSelect.addEventListener('change', function() {
-                const selectedReligions = religionSelect.virtualSelect.getSelectedValues();
+    function openAddModal() {
+        var FormModalgx = new bootstrap.Modal($('#FormModalgx')[0]);
+        $('#FormModalgxLabel').text('Create Profile');
+        $form.find('button[type="submit"]').text('Save');
+        $form.find('input[name="_method"]').remove();
+        $('#status').val('pending').closest('.mb-3').hide();
+        $form[0].reset();
+        $('.preview-container').remove();
+        $form.find('.virtualSelect').each(function() {
+            this.reset();
+        });
+        $form.attr('action', "{{ route($role . '.profiles.store') }}");
+        FormModalgx.show();
+    }
 
-                let casteSet = new Set();
+    function openEditModal(id, element, event) {
+        event.preventDefault();
+        const rowData = tableData[id];
+        if (!rowData) return;
+        console.log('Row Data:', rowData);
 
-                selectedReligions.forEach(religion => {
-                    if (casteOptions[religion]) {
-                        casteOptions[religion].forEach(caste => casteSet.add(caste));
+        $form[0].reset();
+        $form.find('.virtualSelect').each(function() {
+            this.reset();
+        });
+        $form.attr('action', updateUrl.replace('__ID__', rowData.id));
+        $form.attr('method', 'POST');
+        $('#FormModalgxLabel').text('Edit Profile');
+        $form.find('button[type="submit"]').text('Update');
+
+        let $methodInput = $form.find('input[name="_method"]');
+        if (!$methodInput.length) {
+            $methodInput = $('<input>', {
+                type: 'hidden',
+                name: '_method'
+            });
+            $form.append($methodInput);
+        }
+        $methodInput.val('PUT');
+
+        // Helper function to parse JSON strings safely
+        function parseJson(value) {
+            try {
+                return JSON.parse(value || '[]');
+            } catch (e) {
+                return Array.isArray(value) ? value : [value];
+            }
+        }
+
+        // Populate form fields
+        $form.find('[name]:not([name=_token])').each(function() {
+            const $el = $(this);
+            const name = this.name;
+            let value = rowData[name];
+
+            // Skip password fields
+            if (name === 'password' || name === 'password_confirmation') {
+                $el.val('');
+                return;
+            }
+
+            // Handle nested partner fields
+            if (name.startsWith('partner[')) {
+                const partnerKey = name.match(/partner\[([^\]]*)\]/)[1];
+                value = rowData.partner ? rowData.partner[partnerKey] : null;
+            }
+
+            // Parse JSON for fields that are stored as arrays
+            if (['highest_qualification', 'education_field', 'profession', 'grow_up_in', 'government_id', 'photo'].includes(name)) {
+                value = parseJson(value);
+            }
+
+            // Handle phone numbers
+            if (name === 'phone_number' && value && phoneIti) {
+                phoneIti.setNumber(value);
+                return;
+            }
+            if (name === 'alternative_phone_number' && value && altPhoneIti) {
+                altPhoneIti.setNumber(value);
+                return;
+            }
+
+            // Set value for VirtualSelect or regular inputs
+            if ($el.hasClass('virtualSelect')) {
+                if (value) {
+                    // Handle single or multi-select
+                    if (Array.isArray(value)) {
+                        $el[0].setValue(value);
+                    } else {
+                        $el[0].setValue([value]);
                     }
-                });
+                }
+            } else {
+                $el.val(value || '');
+            }
+        });
 
-                const casteArray = Array.from(casteSet).map(caste => ({
-                    label: caste,
-                    value: caste
-                }));
+        // Populate government ID and photo previews
+        const govtIds = parseJson(rowData.government_id);
+        const photos = parseJson(rowData.photo);
+        $('#preview-govt').empty();
+        $('#preview-photo').empty();
+        govtIds.forEach(id => {
+            if (id) {
+                $('#preview-govt').append(`
+                    <div class="preview-container">
+                        <img src="/storage/${id.replace(/\\/g, '')}" alt="Government ID">
+                        <span class="delete-icon">×</span>
+                    </div>
+                `);
+            }
+        });
+        photos.forEach(photo => {
+            if (photo) {
+                $('#preview-photo').append(`
+                    <div class="preview-container">
+                        <img src="/storage/${photo.replace(/\\/g, '')}" alt="Photo">
+                        <span class="delete-icon">×</span>
+                    </div>
+                `);
+            }
+        });
 
-                casteSelect.virtualSelect.setOptions(casteArray);
+        // Handle country, state, city cascading
+        if (rowData.country) {
+            $('#country')[0].setValue(rowData.country);
+            $.ajax({
+                url: "https://countriesnow.space/api/v0.1/countries/states",
+                method: "POST",
+                contentType: "application/json",
+                data: JSON.stringify({ country: rowData.country }),
+                success: function(res) {
+                    const states = res.data.states.map(s => ({
+                        label: s.name,
+                        value: s.name
+                    }));
+                    $('#state')[0].setOptions(states);
+                    if (rowData.state) {
+                        $('#state')[0].setValue(rowData.state);
+                        $.ajax({
+                            url: "https://countriesnow.space/api/v0.1/countries/state/cities",
+                            method: "POST",
+                            contentType: "application/json",
+                            data: JSON.stringify({ country: rowData.country, state: rowData.state }),
+                            success: function(res) {
+                                const cities = res.data.map(c => ({
+                                    label: c,
+                                    value: c
+                                }));
+                                $('#city')[0].setOptions(cities);
+                                if (rowData.city) {
+                                    $('#city')[0].setValue(rowData.city);
+                                }
+                            }
+                        });
+                    }
+                }
             });
+        }
 
-
-            // Load countries
-            $.get("https://countriesnow.space/api/v0.1/countries/positions", function(data) {
-                const countries = data.data.map(c => ({
-                    label: c.name,
-                    value: c.name
-                }));
-
-                document.querySelector('#country').setOptions(countries);
-                document.querySelector('#citizenship').setOptions(countries);
-                document.querySelector('#grow_up').setOptions(countries);
-
-                countries.push({
-                    'label': 'Open to All',
-                    'value': 'Open to All',
-                });
-                document.querySelector('#partner_grow_up').setOptions(countries);
-                document.querySelector('#partner_country').setOptions(countries);
-                document.querySelector('#partner_citizenship').setOptions(countries);
-            });
-
-            // On country change -> Load states (main)
-            document.querySelector('#religion').addEventListener('change', async function() {
-                const religionId = this.value;
-
-                // Clear previous options
-                document.querySelector('#caste').reset();
-                const formData = new FormData();
-                formData.append('religionId', religionId);
-                let op = [];
-                op.push({
-                    label: "Other",
-                    value: "0"
-                });
-
-                try {
-                    const response = await makeHttpRequest(
-                        "{{ route($role . '.profiles.showCasts') }}", "POST", formData, true);
-
+        // Handle religion and caste
+        if (rowData.religion) {
+            $('#religion')[0].setValue(rowData.religion);
+            const formData = new FormData();
+            formData.append('religionId', rowData.religion);
+            makeHttpRequest("{{ route($role . '.profiles.showCasts') }}", "POST", formData, true)
+                .then(response => {
                     if (response.success && Array.isArray(response.casts)) {
                         const casteOptions = response.casts.map(item => ({
                             label: item.name,
                             value: item.id
                         }));
-                        casteOptions.push({
-                            label: "Other",
-                            value: "0"
-                        });
-                        document.querySelector('#caste').setOptions(casteOptions);
-                    } else {
-                        document.querySelector('#caste').setOptions([op]);
+                        casteOptions.push({ label: "Other", value: "0" });
+                        $('#caste')[0].setOptions(casteOptions);
+                        if (rowData.caste) {
+                            $('#caste')[0].setValue(rowData.caste);
+                        }
                     }
-                } catch (error) {
+                })
+                .catch(error => {
                     console.error('Error loading caste options:', error.message);
-                    document.querySelector('#caste').setOptions([op]);
-                }
-            });
-
-            // On country change -> Load states (main)
-            document.querySelector('#country').addEventListener('change', function() {
-                const country = this.value;
-                document.querySelector('#state').reset();
-                document.querySelector('#city').reset();
-
-                $.ajax({
-                    url: "https://countriesnow.space/api/v0.1/countries/states",
-                    method: "POST",
-                    contentType: "application/json",
-                    data: JSON.stringify({
-                        country
-                    }),
-                    success: function(res) {
-                        const states = res.data.states.map(s => ({
-                            label: s.name,
-                            value: s.name
-                        }));
-                        document.querySelector('#state').setOptions(states);
-                    }
                 });
-            });
-
-            // On state change -> Load cities (main)
-            document.querySelector('#state').addEventListener('change', function() {
-                const country = document.querySelector('#country').value;
-                const state = this.value;
-                document.querySelector('#city').reset();
-
-                $.ajax({
-                    url: "https://countriesnow.space/api/v0.1/countries/state/cities",
-                    method: "POST",
-                    contentType: "application/json",
-                    data: JSON.stringify({
-                        country,
-                        state
-                    }),
-                    success: function(res) {
-                        const cities = res.data.map(c => ({
-                            label: c,
-                            value: c
-                        }));
-                        document.querySelector('#city').setOptions(cities);
-                    }
-                });
-            });
-        });
-</script>
-
-<script>
-    (function() {
-            'use strict';
-            window.addEventListener('load', function() {
-                const forms = document.querySelectorAll('.needs-validation');
-                Array.prototype.slice.call(forms).forEach(function(form) {
-                    form.addEventListener('submit', function(event) {
-                        if (!form.checkValidity()) {
-                            event.preventDefault();
-                            event.stopPropagation();
-                        }
-                        form.classList.add('was-validated');
-                    }, false);
-                });
-            });
-        })();
-</script>
-@endpush
-
-@push('scripts')
-<script>
-    let configration;
-        const $form = $('#regForm');
-        const routeIndex = "{{ route($role . '.profiles.index') }}";
-        const updateUrl = @json(route($role . '.profiles.update', ['profile' => '__ID__']));
-
-        document.addEventListener("DOMContentLoaded", function() {
-            validationConfig['ignore'] = [];
-                // Custom rule for married_brothers
-                $.validator.addMethod("marriedLessThanTotal", function(value, element, params) {
-                    const total = $(params).val();
-                    return parseInt(value) <= parseInt(total);
-                }, "Value cannot be greater than total.");
-
-            let colDefs = [{
-                targets: 0,
-                className: 'text-center',
-                orderable: false,
-                searchable: false,
-                width: '50px', // <-- minimum width
-                render: function(e, t, a, s) {
-                    return a.s_no;
-                }
-            }, {
-                targets: -1,
-                title: "Actions",
-                orderable: !1,
-                searchable: !1,
-                render: function(e, t, a, s) {
-                    console.log(e, t, a, s);
-                    tableData[a.id] = a;
-
-                    return `
-                        <a target="_blank" href="${routeIndex}/${a.id}"
-                            class="btn btn-datatable btn-icon btn-transparent-dark me-2"
-                            aria-label="View User"
-                            title="View">    <i class="fas fa-eye"></i>
-                        </a>
-                        <button
-                            type="button"
-                            data-id="index_${a.id}"
-                            onclick="openEditModal(${a.id}, this, event)"
-                            class="btn btn-datatable btn-icon btn-transparent-dark me-2"
-                            aria-label="Edit User"
-                            title="Edit">    <i class="fas fa-pen"></i>
-                        </button>
-                        <button
-                            type="button"
-                            data-id="${a.id}"
-                            data-href = "{{ route($role . '.profiles.destroy', ':id') }}"
-                            onclick="deleteConfirmation(this, event)"
-                            class="btn btn-datatable btn-icon btn-transparent-dark"
-                            aria-label="Delete User"
-                            title="Delete"><i class="far fa-trash-can"></i>
-                        </button>
-                        `;
-                },
-            }, ];
-
-            configration = {
-                processing: true,
-                serverSide: true,
-                  order: [],
-                ajax: {
-                    url: "{{ route('admin.profiles.showAll') }}",
-                    type: 'POST',
-
-                },
-                columns: [{
-                        data: 's_no',
-                    },
-
-                    {
-                        data: 'profile_id',
-                        width: '100px',
-                    },
-                    {
-                data: null,
-                render: function(data, type, row) {
-                    let photoArray = [];
-
-                    try {
-                        photoArray = JSON.parse(row.photo || '[]');
-                    } catch (e) {
-                        photoArray = [];
-                    }
-                    // Use first photo if available, else fallback
-                    let photoPath = photoArray.length > 0 ? photoArray[0] : null;
-                    let imageUrl = photoPath
-                        ? `https://crm.elitebandhan.com/public/storage/${photoPath.replace(/\\/g, '')}`
-                        : `https://crm.elitebandhan.com/public/assets/sb2/assets/img/illustrations/profiles/profile-1.png`;
-                    return `
-                        <div style="display: flex; align-items: center; gap: 10px;">
-                            <img src="${imageUrl}" alt="Photo" width="60" height="60"
-                                 onerror="this.onerror=null;this.src='https://crm.elitebandhan.com/public/assets/sb2/assets/img/illustrations/profiles/profile-1.png';"
-                                 style="object-fit: cover; border-radius: 50%;">
-                        </div>Partner Location 
-                    `;
-                },
-                orderable: false,
-                searchable: true
-            },{
-            data: 'name'
-            }
-
-            , {
-                        data: 'phone_number',
-                    }, {
-                        data: 'email',
-                    }, {
-                        data: 'created_at',
-                        orderable: false,
-                        searchable: false
-                    },
-                    {
-                        data: 'created_at',
-                        orderable: false,
-                        searchable: false
-                    }
-
-                ],
-                columnDefs: colDefs || [],
-                lengthMenu: [[10, 25, 50, 100,1000, -1], [10, 25, 50, 100,1000, "All"]],
-
-            };
-
-            $(regForm).validate(validationConfig);
-            // var FormModalgx = new bootstrap.Modal(document.getElementById('FormModalgx'));
-            // FormModalgx.show();
-        });
-        
-        function openAddModal() {
-            var FormModalgx = new bootstrap.Modal($('#FormModalgx')[0]);
-            $('#FormModalgxLabel').text('Create Profile');
-            // $('#FormModalgxLabel').text('UNDER TESTING');
-            $form.find('button[type="submit"]').text('Save');
-            $form.find('input[name="_method"]').remove();
-            // Set default status and hide it
-            $('#status').val('pending').closest('.mb-3').hide();
-            $form[0].reset();
-            $form.attr('action', "{{ route($role . '.profiles.store') }}");
-            $('.preview-container').remove();
-            FormModalgx.show();
         }
 
-        function openEditModal(id, element, event) {
-            event.preventDefault();
-            const rowData = tableData[id]; // Fix: Use id directly as the key
-            if (!rowData) return;
-            console.log(rowData);
-            $form[0].reset();
-            $form.attr('action', updateUrl.replace('__ID__', rowData.id));
-            $form.attr('method', 'POST');
-            $('#FormModalgxLabel').text('Edit Profile');
-            $form.find('button[type="submit"]').text('Update');
-
-            let $methodInput = $form.find('input[name="_method"]');
-            if (!$methodInput.length) {
-                $methodInput = $('<input>', {
-                    type: 'hidden',
-                    name: '_method'
-                });
-                $form.append($methodInput);
-            }
-            $methodInput.val('PUT');
-
-            $form.find('[name]:not([name=_token])').each(function() {
-                const $el = $(this);
-                const name = this.name;
-                    // Skip password fields
-                if (name === 'password' || name === 'password_confirmation') {
-                    $el.val('');
-                    return;
-                }
-
-                if (rowData[name] ?? false) {
-                    let value = rowData[name];
-
-                    // For phone numbers, remove only the leading '+'
-                    if (name === 'phone_number' || name === 'alternative_phone_number') {
-                        value = value.replace(/^\+/, '').trim();
-                    }
-
-                    if ($el.hasClass('virtualSelect')) {
-                        // Handle multi-select values
-                        if (typeof value === 'string' && value.includes(',')) {
-                            value = value.split(',').map(item => item.trim());
-                        }
-                        $(`[name="${name}"]`)[0].setValue(value);
-                    } else {
-                        this.value = value;
-                    }
-                }
-            });
-            // Fill form values
-            // $('#profile_source_id')[0].setValue(rowData.profile_source_id);
-            // $('#profile_source_id')[0].setValue([26 ]rowData.profile_source_id);
-            // $('#price').val(rowData.price);
-            // $('#discount').val(rowData.discount);
-            // $('#start_date').val(rowData.start_date);
-            // $('#end_date').val(rowData.end_date);
-            new bootstrap.Modal($('#FormModalgx')[0]).show();
-        }
+        // Show the modal
+        new bootstrap.Modal($('#FormModalgx')[0]).show();
+    }
 </script>
 @endpush
